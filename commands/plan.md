@@ -203,4 +203,4 @@ ECC also provides a `planner` agent for manual installs that include agent files
 If the `planner` subagent is unavailable, continue planning inline instead of surfacing an "Agent type 'planner' not found" error.
 
 For manual installs, the source file lives at:
-`agents/planner.md`
+`../agents/planner.md`

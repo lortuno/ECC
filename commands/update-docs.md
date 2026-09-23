@@ -14,7 +14,7 @@ Sync documentation with the codebase, generating from source-of-truth files.
 | `.env.example` | Environment variable documentation |
 | `openapi.yaml` / route files | API endpoint reference |
 | Source code exports | Public API documentation |
-| `Dockerfile` / `docker-compose.yml` | Infrastructure setup docs |
+| `Dockerfile` / `../../docker-compose.yml` | Infrastructure setup docs |
 
 ## Step 2: Generate Script Reference
 

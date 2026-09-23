@@ -43,9 +43,9 @@ When invoked:
 - Public methods without type hints for parameters and return types
 - Using `mixed` when a specific union type is possible
 - Missing `readonly` on constructor-promoted properties that are never reassigned
-- Missing `final` on classes not designed for inheritance
+- Adding `final` on classes designed for inheritance
 
-### HIGH — Eloquent / Laravel Patterns
+### HIGH — Eloquent / Symfony Patterns
 - N+1 queries: missing `with()` for relationships in loops or serialization
 - Eager loading in serialization: missing `$with` on model, or `->load()` on queried relation
 - Missing `$fillable` or `$casts` on models
@@ -95,14 +95,14 @@ Fix: What to change
 
 ## Framework Checks
 
-- **Laravel**: N+1 via `with()`/`load()`, `$fillable`/`$casts`, FormRequest validation, route model binding, `Gate`/`Policy` authorization, Sanctum token abilities, queue idempotency
+- **Symfony**: N+1 via `with()`/`load()`, `$fillable`/`$casts`, FormRequest validation, route model binding, `Gate`/`Policy` authorization, Sanctum token abilities, queue idempotency
 - **Livewire**: Proper `#[Rule]` attributes, authorization in `authorize()`, wire:model security
 - **Filament**: Form/table authorization, `canAccess()`, policy registration
 - **Plain PHP**: PDO prepared statements, password_hash/password_verify, header-based CSRF
 
 ## Reference
 
-For detailed PHP patterns, security examples, and code samples, see skills: `laravel-patterns`, `laravel-security`, `laravel-tdd`.
+For detailed PHP patterns, security examples, and code samples, see skills: `Symfony-patterns`, `Symfony-security`, `Symfony-tdd`.
 
 ---
 

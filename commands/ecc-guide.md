@@ -31,12 +31,12 @@ Use this command as a conversational map of Everything Claude Code. It should he
 
 Use these files as the canonical map:
 
-- `README.md` for install paths, reset/uninstall guidance, and high-level positioning
+- `../../README.md` for install paths, reset/uninstall guidance, and high-level positioning
 - `AGENTS.md` for contributor and project-structure guidance
 - `agent.yaml` for exported agent and command surface
-- `commands/` for maintained slash-command shims
+- `` for maintained slash-command shims
 - `skills/*/SKILL.md` for reusable skill workflows
-- `agents/*.md` for delegated agent roles
+- `../agents` for delegated agent roles
 - `hooks/README.md` and `hooks/hooks.json` for hook behavior
 - `manifests/install-*.json` for selective install modules, components, and profiles
 - `scripts/ci/catalog.js --json` for live catalog counts when running inside ECC
@@ -79,7 +79,7 @@ For `find: <query>`:
 
 For a specific feature name:
 
-1. Check exact paths first, such as `skills/<name>/SKILL.md`, `commands/<name>.md`, and `agents/<name>.md`.
+1. Check exact paths first, such as `skills/<name>/SKILL.md`, ``, and `../agents`.
 2. If exact lookup fails, search with `rg`.
 3. Explain what the feature does, when to use it, and what file is canonical.
 4. Mention adjacent features only when they reduce confusion.
