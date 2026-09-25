@@ -106,14 +106,21 @@ function runTests() {
 
   // 1. Passes through input on stdout
   (test('passes through input on stdout', () => {
-    const input = {
-      model: 'claude-sonnet-4-20250514',
-      usage: { input_tokens: 100, output_tokens: 50 },
-    };
-    const inputStr = JSON.stringify(input);
-    const result = runScript(input);
-    assert.strictEqual(result.code, 0, `Expected exit code 0, got ${result.code}`);
-    assert.strictEqual(result.stdout, inputStr, 'Expected stdout to match original input');
+    // Isolated via withTempHome — without it this hits the real
+    // ~/.claude/metrics/costs.jsonl (see #leak fixed alongside this test).
+    const tmpHome = makeTempDir();
+    try {
+      const input = {
+        model: 'claude-sonnet-4-20250514',
+        usage: { input_tokens: 100, output_tokens: 50 },
+      };
+      const inputStr = JSON.stringify(input);
+      const result = runScript(input, withTempHome(tmpHome));
+      assert.strictEqual(result.code, 0, `Expected exit code 0, got ${result.code}`);
+      assert.strictEqual(result.stdout, inputStr, 'Expected stdout to match original input');
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+    }
   }) ? passed++ : failed++);
 
   (test('keeps JSONL authoritative when the snapshot path cannot be published', () => {

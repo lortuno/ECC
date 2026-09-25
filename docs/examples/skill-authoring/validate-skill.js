@@ -30,7 +30,7 @@ const path = require('path');
  * @returns {Record<string,string>|null} null if no frontmatter block found
  */
 function extractFrontmatter(content) {
-  const clean = content.replace(/^﻿/, ''); // strip BOM
+  const clean = content.replace(/^\uFEFF/, ''); // strip BOM
   const match = clean.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!match) return null;
 

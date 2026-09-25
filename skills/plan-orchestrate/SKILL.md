@@ -22,7 +22,7 @@ Skip when:
 ## Inputs
 
 ```
-<plan-doc-path> [--lang=python|typescript|go|rust|cpp|java|kotlin|flutter|auto] [--scope=all|step:<n>|range:<a>-<b>] [--dry-run]
+<plan-doc-path> [--lang=php|typescript|react|auto] [--scope=all|step:<n>|range:<a>-<b>] [--dry-run]
 ```
 
 - `<plan-doc-path>` — required; relative or absolute path (`@docs/...` accepted).
@@ -67,19 +67,17 @@ General:
 - `refactor-cleaner` — dead code, duplicates, knip-class cleanup
 - `doc-updater` — documentation, codemap, README
 - `docs-lookup` — third-party library API lookups (Context7)
-- `e2e-runner` — end-to-end test orchestration
-- `database-reviewer` — PostgreSQL schema, migration, performance
+- `database-reviewer` — schema, migration, query performance
 - `harness-optimizer` — local agent harness configuration
 - `loop-operator` — long-running autonomous loops
-- `chief-of-staff` — multi-channel triage (rarely a fit for plan steps)
 
 Build error resolvers:
-- `build-error-resolver` (generic) / `cpp-build-resolver` / `go-build-resolver` / `java-build-resolver` / `kotlin-build-resolver` / `rust-build-resolver` / `pytorch-build-resolver`
+- `build-error-resolver` (generic) / `react-build-resolver` (React/JSX build failures)
 
 Code reviewers:
-- `python-reviewer` / `typescript-reviewer` / `go-reviewer` / `rust-reviewer` / `cpp-reviewer` / `java-reviewer` / `kotlin-reviewer` / `flutter-reviewer`
+- `php-reviewer` / `typescript-reviewer` / `react-reviewer`
 
-A misspelled agent name fails `/orchestrate`. Cross-check against this list before emitting.
+A misspelled agent name fails `/orchestrate`. Cross-check against this list before emitting — this repo's agent catalogue is scoped to PHP/JS/React (see `.claude-plugin/plugin.json`'s description); do not invent a reviewer or build resolver for a language that has no matching file under `agents/`.
 
 ## How It Works
 
@@ -93,13 +91,12 @@ A misspelled agent name fails `/orchestrate`. Cross-check against this list befo
    4. If both markers exist (mixed install), `plugin` wins — the plugin namespace is the only one that resolves agent names without fuzzy matching.
 
    From this point on, every emitted line uses the matching prefix on **both** the slash command and every agent name. **Never emit both forms in the same output.**
-3. Resolve `--lang`. When `auto`, run a polyglot-aware detection:
-   - Probe markers: `pyproject.toml` / `uv.lock` / `requirements.txt` → python; `package.json` → typescript; `go.mod` → go; `Cargo.toml` → rust; `CMakeLists.txt` or top-level `*.cpp` → cpp; `pom.xml` / `build.gradle` (Java) → java; `build.gradle.kts` or top-level Kotlin → kotlin; `pubspec.yaml` → flutter.
-   - **Polyglot tie-break**: if more than one marker matches, pick the language whose source files outnumber the others (count via `git ls-files`, excluding `vendor/`, `node_modules/`, `dist/`, `build/`, `.venv/`, generated files, and obvious test fixtures). On a tie or when no language exceeds 60% of source files, set `lang=unknown`.
+3. Resolve `--lang`. When `auto`, run detection (markers match `config/project-stack-mappings.json`'s own `php-symfony`/`react`/`typescript` stacks, kept in sync with it):
+   - Probe markers, in this order: `composer.json` / `symfony.lock` / `bin/console` → php; `package.json` containing `"react"` → react; `package.json` or `tsconfig.json` → typescript.
+   - **Mixed-stack tie-break**: a project can legitimately match both php (backend) and react/typescript (frontend). When it does, keep both markers — Phase 2 picks the reviewer whose domain matches each step's tags rather than forcing one project-wide language. If a step's own tags don't imply either domain, set `lang=unknown` for that step.
    - No marker matched → set `lang=unknown`.
-   - `lang=unknown` is a sentinel — it is **not** an agent name. Phase 2 rules 4 and 5 turn it into `code-reviewer` / `build-error-resolver` at chain composition time.
-4. Detect a **PyTorch sub-profile**: when `lang=python` and any of `pyproject.toml` / `requirements.txt` / `uv.lock` declares a dependency on `torch`, set `pytorch=true`. This only affects `build` chain selection (Phase 2 rule below); the reviewer remains `python-reviewer`.
-5. **Normalize any agent names declared in the plan**: if the plan text references agents by their plugin-prefixed form (e.g. `ecc:tdd-guide`), strip the prefix to get the bare catalogue name before validating or composing chains. Re-prefixing happens only at output time per `ECC_MODE` (Phase 4). Never let a pre-prefixed name flow into chain composition — it would double-prefix in plugin mode.
+   - `lang=unknown` is a sentinel — it is **not** an agent name. Phase 2 rules 5 and 6 turn it into `code-reviewer` / `build-error-resolver` at chain composition time.
+4. **Normalize any agent names declared in the plan**: if the plan text references agents by their plugin-prefixed form (e.g. `ecc:tdd-guide`), strip the prefix to get the bare catalogue name before validating or composing chains. Re-prefixing happens only at output time per `ECC_MODE` (Phase 4). Never let a pre-prefixed name flow into chain composition — it would double-prefix in plugin mode.
 
 ### Phase 1 — Decompose steps
 
@@ -123,7 +120,7 @@ Trigger words below are matched case-insensitively. Multilingual plans are suppo
 | `design` | architecture, design, choose, evaluate, RFC | `planner,architect` |
 | `plan` | plan, breakdown, milestone | `planner` |
 | `impl` | implement, build, add, create, port | `tdd-guide,<lang>-reviewer` |
-| `test` | test, coverage, e2e, integration | `tdd-guide,e2e-runner` |
+| `test` | test, coverage, e2e, integration | `tdd-guide` |
 | `refactor` | refactor, cleanup, dedupe, split | `architect,refactor-cleaner,<lang>-reviewer` |
 | `migration` | migrate, upgrade, rewrite, port | `architect,tdd-guide,<lang>-reviewer` |
 | `db` | schema, migration, index, SQL, Postgres, alembic, sqlmodel | `database-reviewer,<lang>-reviewer` |
@@ -139,12 +136,12 @@ Chain composition rules:
 2. `impl` + `security` → `tdd-guide,<lang>-reviewer,security-reviewer`.
 3. `impl` + `db` → `tdd-guide,database-reviewer,<lang>-reviewer`.
 4. **Deduplicate** the resulting chain (preserve first occurrence). E.g. `review` + `lang=unknown` would yield `code-reviewer,code-reviewer` after rule 5; deduplication collapses it to `code-reviewer`.
-5. `<lang>-reviewer` resolves to `code-reviewer` when `lang=unknown`.
-6. `<lang>-build-resolver` resolves to `build-error-resolver` when `lang=unknown`. **Special case**: if Phase 0 set `pytorch=true`, use `pytorch-build-resolver` for `build` chains regardless of `<lang>`. There is no `python-build-resolver`; `--lang=python` without `pytorch=true` resolves to `build-error-resolver`.
+5. `<lang>-reviewer` resolves to `php-reviewer` when `lang=php`, `typescript-reviewer` when `lang=typescript`, `react-reviewer` when `lang=react`, or `code-reviewer` when `lang=unknown`.
+6. `<lang>-build-resolver` resolves to `react-build-resolver` when `lang=react`, or `build-error-resolver` otherwise (`php` and `typescript` have no dedicated build resolver in this catalogue — use the generic one).
 7. **Zero-tag steps**: if no trigger word matches, set chain to `code-reviewer` and write `no tag matched; default review-only chain` under "Chain rationale".
 8. Chain length ≤ 4 after deduplication. If exceeded, drop weakest tag (`lookup` and `docs` first).
 9. Do not pair `planner` and `architect` in an `impl` chain (token waste). Pair them only on `design` steps.
-10. Steps tagged `impl`, `refactor`, or `migration` end with a **reviewer-class** agent — any of `<lang>-reviewer`, `code-reviewer`, `security-reviewer`, or `database-reviewer`. The most domain-specific reviewer wins the tail position (e.g. rule 2's `impl+security` ends with `security-reviewer`; rule 3's `impl+db` ends with `<lang>-reviewer` because `database-reviewer` already gates the migration earlier in the chain). `test` and `build` steps are gated by their own validators (`e2e-runner` and the build resolver respectively) and do not require an additional reviewer.
+10. Steps tagged `impl`, `refactor`, or `migration` end with a **reviewer-class** agent — any of `<lang>-reviewer`, `code-reviewer`, `security-reviewer`, or `database-reviewer`. The most domain-specific reviewer wins the tail position (e.g. rule 2's `impl+security` ends with `security-reviewer`; rule 3's `impl+db` ends with `<lang>-reviewer` because `database-reviewer` already gates the migration earlier in the chain). `test` steps are gated by `tdd-guide` itself (test-driven, no separate reviewer needed); `build` steps are gated by the build resolver.
 
 ### Phase 3 — Compress task description
 
@@ -181,7 +178,7 @@ Output structure:
 
 | # | Title | Tags | Chain |
 |---|---|---|---|
-| 1 | ... | impl, db | `{AGENT(tdd-guide)},{AGENT(database-reviewer)},{AGENT(python-reviewer)}` |
+| 1 | ... | impl, db | `{AGENT(tdd-guide)},{AGENT(database-reviewer)},{AGENT(php-reviewer)}` |
 | ... | | | |
 
 ---
@@ -193,7 +190,7 @@ Output structure:
 **Chain rationale**: <why this chain; which agent closes the loop>
 
 ```bash
-{ORCH_CMD} custom "{AGENT(tdd-guide)},{AGENT(database-reviewer)},{AGENT(python-reviewer)}" "[Plan: docs/foo.md#step-1] <compressed task description>; Acceptance: <1–3 items>; Out of scope: <…>"
+{ORCH_CMD} custom "{AGENT(tdd-guide)},{AGENT(database-reviewer)},{AGENT(php-reviewer)}" "[Plan: docs/foo.md#step-1] <compressed task description>; Acceptance: <1–3 items>; Out of scope: <…>"
 ```
 ````
 
@@ -203,7 +200,7 @@ Append a final "Batch execution" block aggregating every step's command in order
 
 ### Phase 5 — Self-check (run before emitting)
 
-- [ ] Every agent in every chain comes from the catalogue (after stripping any `ecc:` prefix that appeared in the plan; see Phase 0 step 5).
+- [ ] Every agent in every chain comes from the catalogue (after stripping any `ecc:` prefix that appeared in the plan; see Phase 0 step 4).
 - [ ] Resolved `{ORCH_CMD}` and every resolved `{AGENT(...)}` use the **same** form (`plugin` or `legacy`) — never mixed in one output.
 - [ ] No `# plugin form` / `# legacy form` annotations and no "strip the prefix" instructions remain in the rendered output.
 - [ ] No invented `--mode` / `--gate` / `--agents=...` fields.
@@ -221,28 +218,28 @@ Append a final "Batch execution" block aggregating every step's command in order
 - **No clear steps**: prefer H2/H3 splitting; if still ambiguous, report "no structured steps detected" with the document outline and ask the user to confirm running by outline.
 - **Large plan (>1500 lines)**: enter **overview-only mode** — emit only the overview table and ask the user to narrow with `--scope` before re-running for details. In this mode, skip per-step detail blocks and skip the Batch execution block.
 - **Step too broad** (e.g. "complete all backend work"): do not force a single chain. Suggest splitting into N.a and N.b and propose a split.
-- **Plan declares agents** (rare): first **strip any `ecc:` prefix** to get the bare catalogue name (Phase 0 step 5), then validate against the catalogue. Replace invalid agents and explain under "Chain rationale". The bare name is re-prefixed at output time per `ECC_MODE`.
+- **Plan declares agents** (rare): first **strip any `ecc:` prefix** to get the bare catalogue name (Phase 0 step 4), then validate against the catalogue. Replace invalid agents and explain under "Chain rationale". The bare name is re-prefixed at output time per `ECC_MODE`.
 - **Polyglot project where `--lang=auto` cannot pick a winner**: set `lang=unknown`; reviewer resolves to `code-reviewer` and build resolver to `build-error-resolver`. Mention the fallback under "Chain rationale".
 
 ## Examples
 
-### Example 1 — Plugin mode, Python plan
+### Example 1 — Plugin mode, PHP plan
 
 Input:
 ```
-plan-orchestrate @docs/plan/example-feature.md --lang=python
+plan-orchestrate @docs/plan/example-feature.md --lang=php
 ```
 
 Excerpt of expected output:
 ````markdown
 ## Step 2 — Encrypt sensitive UserProfile fields
 
-**Intent**: Introduce an `EncryptedString` SQLAlchemy type and AES-GCM encrypt `birth_datetime` / `location` before persistence; load the key from an environment variable.
+**Intent**: Introduce an `EncryptedString` Doctrine type and AES-GCM encrypt `birth_datetime` / `location` before persistence; load the key from an environment variable.
 **Tags**: impl, security, db
-**Chain rationale**: Security-sensitive write path, so `security-reviewer` closes the chain; `database-reviewer` validates the alembic migration; `python-reviewer` covers typing and PEP 8.
+**Chain rationale**: Security-sensitive write path, so `security-reviewer` closes the chain; `database-reviewer` validates the Doctrine migration; `php-reviewer` covers PSR-12 and the type system.
 
 ```bash
-/ecc:orchestrate custom "ecc:tdd-guide,ecc:database-reviewer,ecc:python-reviewer,ecc:security-reviewer" "[Plan: docs/plan/example-feature.md#step-2] Implement EncryptedString SQLAlchemy type and migrate UserProfile.birth_datetime/location columns; key from ENV APP_DB_KEY; Acceptance: encrypt/decrypt roundtrip tests pass; alembic upgrade/downgrade clean on empty DB; no plaintext in DB after migrate; Out of scope: cross-tenant profile sharing logic"
+/ecc:orchestrate custom "ecc:tdd-guide,ecc:database-reviewer,ecc:php-reviewer,ecc:security-reviewer" "[Plan: docs/plan/example-feature.md#step-2] Implement EncryptedString Doctrine type and migrate UserProfile.birthDatetime/location columns; key from ENV APP_DB_KEY; Acceptance: encrypt/decrypt roundtrip tests pass; doctrine:migrations:migrate/down clean on empty DB; no plaintext in DB after migrate; Out of scope: cross-tenant profile sharing logic"
 ```
 ````
 
@@ -251,7 +248,7 @@ Excerpt of expected output:
 If `ECC_MODE=legacy` were detected, the same step would be emitted as a single uniform command (no plugin-prefixed forms anywhere in the output):
 
 ```bash
-/orchestrate custom "tdd-guide,database-reviewer,python-reviewer,security-reviewer" "[Plan: docs/plan/example-feature.md#step-2] ..."
+/orchestrate custom "tdd-guide,database-reviewer,php-reviewer,security-reviewer" "[Plan: docs/plan/example-feature.md#step-2] ..."
 ```
 
 The two examples above illustrate **the two possible outputs** for two different environments. A single skill invocation produces only one of them, end to end.

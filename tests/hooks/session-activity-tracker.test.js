@@ -75,18 +75,26 @@ function runTests() {
   let failed = 0;
 
   (test('passes through input on stdout', () => {
-    const input = {
-      tool_name: 'Read',
-      tool_input: { file_path: 'README.md' },
-      tool_output: { output: 'ok' },
-    };
-    const inputStr = JSON.stringify(input);
-    const result = runScript(input, {
-      CLAUDE_HOOK_EVENT_NAME: 'PostToolUse',
-      ECC_SESSION_ID: 'sess-123',
-    });
-    assert.strictEqual(result.code, 0);
-    assert.strictEqual(result.stdout, inputStr);
+    // Isolated via withTempHome — without it this hits the real
+    // ~/.claude/metrics/tool-usage.jsonl (see #leak fixed alongside this test).
+    const tmpHome = makeTempDir();
+    try {
+      const input = {
+        tool_name: 'Read',
+        tool_input: { file_path: 'README.md' },
+        tool_output: { output: 'ok' },
+      };
+      const inputStr = JSON.stringify(input);
+      const result = runScript(input, {
+        ...withTempHome(tmpHome),
+        CLAUDE_HOOK_EVENT_NAME: 'PostToolUse',
+        ECC_SESSION_ID: 'sess-123',
+      });
+      assert.strictEqual(result.code, 0);
+      assert.strictEqual(result.stdout, inputStr);
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+    }
   }) ? passed++ : failed++);
 
   (test('creates tool activity metrics rows with file paths', () => {

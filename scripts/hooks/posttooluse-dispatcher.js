@@ -20,6 +20,7 @@ const { run: runObserve } = require('./observe-runner');
 const { run: runMetricsBridge } = require('./ecc-metrics-bridge');
 const { run: runContextMonitor } = require('./ecc-context-monitor');
 const { run: runSkillRunTracker } = require('./skill-run-tracker');
+const { run: runAgentRunTracker } = require('./agent-run-tracker');
 
 const MAX_STDIN = resolveMaxStdin(process.env.ECC_HOOK_INPUT_MAX_BYTES, {
   writeDiagnostic: message => process.stderr.write(message)
@@ -52,7 +53,8 @@ const ASYNC_HOOKS = [
   },
   { id: 'post:quality-gate', matcher: 'Edit|Write|MultiEdit', profiles: 'standard,strict', script: 'scripts/hooks/quality-gate.js', run: runQualityGate },
   { id: 'post:observe:continuous-learning', matcher: '*', profiles: 'standard,strict', script: 'scripts/hooks/observe-runner.js', run: runObserve },
-  { id: 'post:skill:track', matcher: 'Skill', profiles: 'standard,strict', script: 'scripts/hooks/skill-run-tracker.js', run: runSkillRunTracker }
+  { id: 'post:skill:track', matcher: 'Skill', profiles: 'standard,strict', script: 'scripts/hooks/skill-run-tracker.js', run: runSkillRunTracker },
+  { id: 'post:agent:track', matcher: 'Task', profiles: 'standard,strict', script: 'scripts/hooks/agent-run-tracker.js', run: runAgentRunTracker }
 ];
 
 function getPluginRoot(env = process.env) {

@@ -35,7 +35,7 @@ const VALID_MODELS = ['haiku', 'sonnet', 'opus'];
  * @returns {{values: Record<string,string>, toolsIsSequence: boolean}|null}
  */
 function extractFrontmatter(content) {
-  const clean = content.replace(/^﻿/, '');
+  const clean = content.replace(/^\uFEFF/, '');
   const match = clean.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!match) return null;
 
