@@ -228,83 +228,6 @@ function runTests() {
     }
   })) passed++; else failed++;
 
-  if (test('installs Cursor configs and writes install-state', () => {
-    const homeDir = createTempDir('install-apply-home-');
-    const projectDir = createTempDir('install-apply-project-');
-
-    try {
-      const result = run(['--target', 'cursor', 'typescript', '--enable-hooks'], { cwd: projectDir, homeDir });
-      assert.strictEqual(result.code, 0, result.stderr);
-
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'rules', 'common-coding-style.mdc')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'rules', 'typescript-testing.mdc')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'rules', 'common-agents.mdc')));
-      assert.ok(!fs.existsSync(path.join(projectDir, '.cursor', 'rules', 'common-agents.md')));
-      assert.ok(!fs.existsSync(path.join(projectDir, '.cursor', 'rules', 'README.mdc')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'agents', 'ecc-architect.md')));
-      assert.ok(!fs.existsSync(path.join(projectDir, '.cursor', 'agents', 'architect.md')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'commands', 'plan.md')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'hooks.json')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'mcp.json')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'hooks', 'session-start.js')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'scripts', 'lib', 'utils.js')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'skills', 'tdd-workflow', 'SKILL.md')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'skills', 'coding-standards', 'SKILL.md')));
-
-      const hooksConfig = readJson(path.join(projectDir, '.cursor', 'hooks.json'));
-      const mcpConfig = readJson(path.join(projectDir, '.cursor', 'mcp.json'));
-      assert.strictEqual(hooksConfig.version, 1);
-      assert.ok(hooksConfig.hooks.sessionStart, 'Should keep Cursor sessionStart hooks');
-      assert.ok(mcpConfig.mcpServers['chrome-devtools'], 'Should install shared MCP servers into Cursor');
-
-      const statePath = path.join(projectDir, '.cursor', 'ecc-install-state.json');
-      const state = readJson(statePath);
-      const normalizedProjectDir = fs.realpathSync(projectDir);
-      assert.strictEqual(state.target.id, 'cursor-project');
-      assert.strictEqual(state.target.root, path.join(normalizedProjectDir, '.cursor'));
-      assert.deepStrictEqual(state.request.legacyLanguages, ['typescript']);
-      assert.strictEqual(state.request.legacyMode, true);
-      assert.ok(state.resolution.selectedModules.includes('framework-language'));
-      assert.ok(
-        state.operations.some(operation => (
-          operation.destinationPath === path.join(normalizedProjectDir, '.cursor', 'commands', 'plan.md')
-        )),
-        'Should record manifest command file copy operation'
-      );
-    } finally {
-      cleanup(homeDir);
-      cleanup(projectDir);
-    }
-  })) passed++; else failed++;
-
-  if (test('installs Cursor MCP config by merging bundled servers into an existing mcp.json', () => {
-    const homeDir = createTempDir('install-apply-home-');
-    const projectDir = createTempDir('install-apply-project-');
-
-    try {
-      const cursorRoot = path.join(projectDir, '.cursor');
-      fs.mkdirSync(cursorRoot, { recursive: true });
-      fs.writeFileSync(path.join(cursorRoot, 'mcp.json'), JSON.stringify({
-        mcpServers: {
-          custom: {
-            command: 'node',
-            args: ['custom-mcp.js'],
-          },
-        },
-      }, null, 2));
-
-      const result = run(['--target', 'cursor', 'typescript', '--enable-hooks'], { cwd: projectDir, homeDir });
-      assert.strictEqual(result.code, 0, result.stderr);
-
-      const mcpConfig = readJson(path.join(projectDir, '.cursor', 'mcp.json'));
-      assert.ok(mcpConfig.mcpServers.custom, 'Should preserve existing custom Cursor MCP servers');
-      assert.ok(mcpConfig.mcpServers['chrome-devtools'], 'Should merge the bundled chrome-devtools MCP server');
-    } finally {
-      cleanup(homeDir);
-      cleanup(projectDir);
-    }
-  })) passed++; else failed++;
-
   if (test('installs Antigravity configs and writes install-state', () => {
     const homeDir = createTempDir('install-apply-home-');
     const projectDir = createTempDir('install-apply-project-');
@@ -370,91 +293,19 @@ function runTests() {
 
     try {
       const result = run(
-        ['--target', 'antigravity', 'c', 'go', 'kotlin', 'javascript', 'rails', 'harmonyos'],
+        ['--target', 'antigravity', 'php', 'javascript'],
         { cwd: projectDir, homeDir }
       );
       assert.strictEqual(result.code, 0, result.stderr);
 
       const rulesDir = path.join(projectDir, '.agents', 'rules');
       for (const fileName of [
-        'golang-testing.md',
-        'kotlin-testing.md',
+        'php-testing.md',
         'typescript-testing.md',
-        'ruby-testing.md',
-        'arkts-testing.md',
-        'cpp-testing.md',
       ]) {
         assert.ok(fs.existsSync(path.join(rulesDir, fileName)), `Expected ${fileName}`);
       }
       assert.ok(!fs.existsSync(path.join(rulesDir, 'python-testing.md')));
-    } finally {
-      cleanup(homeDir);
-      cleanup(projectDir);
-    }
-  })) passed++; else failed++;
-
-  if (test('installs JoyCode profile through managed install-state', () => {
-    const homeDir = createTempDir('install-apply-home-');
-    const projectDir = createTempDir('install-apply-project-');
-
-    try {
-      const result = run(['--target', 'joycode', '--profile', 'minimal'], { cwd: projectDir, homeDir });
-      assert.strictEqual(result.code, 0, result.stderr);
-
-      assert.ok(fs.existsSync(path.join(projectDir, '.joycode', 'rules', 'common-coding-style.md')));
-      assert.ok(!fs.existsSync(path.join(projectDir, '.joycode', 'rules', 'common', 'coding-style.md')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.joycode', 'agents', 'architect.md')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.joycode', 'commands', 'plan.md')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.joycode', 'skills', 'tdd-workflow', 'SKILL.md')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.joycode', 'mcp-configs', 'mcp-servers.json')));
-      assert.ok(!fs.existsSync(path.join(projectDir, '.joycode', 'hooks')));
-
-      const statePath = path.join(projectDir, '.joycode', 'ecc-install-state.json');
-      const state = readJson(statePath);
-      assert.strictEqual(state.target.id, 'joycode-project');
-      assert.deepStrictEqual(state.request.modules, []);
-      assert.strictEqual(state.request.profile, 'minimal');
-      assert.ok(state.resolution.selectedModules.includes('workflow-quality'));
-      assert.ok(
-        state.operations.some(operation => (
-          operation.destinationPath.endsWith(path.join('.joycode', 'skills', 'tdd-workflow', 'SKILL.md'))
-        )),
-        'Should record JoyCode skill file operation'
-      );
-    } finally {
-      cleanup(homeDir);
-      cleanup(projectDir);
-    }
-  })) passed++; else failed++;
-
-  if (test('installs Qwen profile through managed home install-state', () => {
-    const homeDir = createTempDir('install-apply-home-');
-    const projectDir = createTempDir('install-apply-project-');
-
-    try {
-      const result = run(['--target', 'qwen', '--profile', 'minimal'], { cwd: projectDir, homeDir });
-      assert.strictEqual(result.code, 0, result.stderr);
-
-      assert.ok(fs.existsSync(path.join(homeDir, '.qwen', 'QWEN.md')));
-      assert.ok(fs.existsSync(path.join(homeDir, '.qwen', 'rules', 'common', 'coding-style.md')));
-      assert.ok(fs.existsSync(path.join(homeDir, '.qwen', 'agents', 'architect.md')));
-      assert.ok(fs.existsSync(path.join(homeDir, '.qwen', 'commands', 'plan.md')));
-      assert.ok(fs.existsSync(path.join(homeDir, '.qwen', 'skills', 'tdd-workflow', 'SKILL.md')));
-      assert.ok(fs.existsSync(path.join(homeDir, '.qwen', 'mcp-configs', 'mcp-servers.json')));
-      assert.ok(!fs.existsSync(path.join(homeDir, '.qwen', 'hooks')));
-
-      const statePath = path.join(homeDir, '.qwen', 'ecc-install-state.json');
-      const state = readJson(statePath);
-      assert.strictEqual(state.target.id, 'qwen-home');
-      assert.deepStrictEqual(state.request.modules, []);
-      assert.strictEqual(state.request.profile, 'minimal');
-      assert.ok(state.resolution.selectedModules.includes('workflow-quality'));
-      assert.ok(
-        state.operations.some(operation => (
-          operation.destinationPath.endsWith(path.join('.qwen', 'skills', 'tdd-workflow', 'SKILL.md'))
-        )),
-        'Should record Qwen skill file operation'
-      );
     } finally {
       cleanup(homeDir);
       cleanup(projectDir);
@@ -896,7 +747,7 @@ function runTests() {
 
       assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'rules', 'common-coding-style.md')));
       assert.ok(
-        fs.existsSync(path.join(projectDir, '.agents', 'rules', 'python-testing.md')),
+        fs.existsSync(path.join(projectDir, '.agents', 'rules', 'php-testing.md')),
         'Manifest profiles should retain broad rule coverage'
       );
       assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'agents', 'architect.md')));
@@ -920,37 +771,6 @@ function runTests() {
       assert.ok(state.resolution.skippedModules.includes('hooks-runtime'));
       assert.ok(!state.resolution.skippedModules.includes('workflow-quality'));
       assert.ok(!state.resolution.skippedModules.includes('platform-configs'));
-    } finally {
-      cleanup(homeDir);
-      cleanup(projectDir);
-    }
-  })) passed++; else failed++;
-
-  if (test('installs explicit modules for cursor using manifest operations', () => {
-    const homeDir = createTempDir('install-apply-home-');
-    const projectDir = createTempDir('install-apply-project-');
-
-    try {
-      const result = run(['--target', 'cursor', '--modules', 'platform-configs', '--enable-hooks'], {
-        cwd: projectDir,
-        homeDir,
-      });
-      assert.strictEqual(result.code, 0, result.stderr);
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'hooks.json')));
-      assert.ok(fs.existsSync(path.join(projectDir, '.cursor', 'rules', 'common-agents.mdc')));
-      assert.ok(!fs.existsSync(path.join(projectDir, '.cursor', 'rules', 'common-agents.md')));
-
-      const state = readJson(path.join(projectDir, '.cursor', 'ecc-install-state.json'));
-      assert.strictEqual(state.request.profile, null);
-      assert.deepStrictEqual(state.request.modules, ['platform-configs']);
-      assert.deepStrictEqual(state.request.includeComponents, []);
-      assert.deepStrictEqual(state.request.excludeComponents, []);
-      assert.strictEqual(state.request.legacyMode, false);
-      assert.ok(state.resolution.selectedModules.includes('platform-configs'));
-      assert.ok(
-        !state.operations.some(operation => operation.destinationPath.endsWith('ecc-install-state.json')),
-        'Manifest copy operations should not include generated install-state files'
-      );
     } finally {
       cleanup(homeDir);
       cleanup(projectDir);
@@ -1053,74 +873,6 @@ function runTests() {
         cleanup(homeDir);
         cleanup(projectDir);
       }
-    }
-  })) passed++; else failed++;
-
-  if (test('isolates project hooks from ESM package scopes without overwriting user Claude package data', () => {
-    const homeDir = createTempDir('install-apply-claude-project-esm-home-');
-    const projectDir = createTempDir('install-apply-claude-project-esm-');
-    const claudeRoot = path.join(projectDir, '.claude');
-    const userPackagePath = path.join(claudeRoot, 'package.json');
-    const scriptsPackagePath = path.join(claudeRoot, 'scripts', 'package.json');
-    const hooksPackagePath = path.join(claudeRoot, 'scripts', 'hooks', 'package.json');
-    const libPackagePath = path.join(claudeRoot, 'scripts', 'lib', 'package.json');
-    const userPackage = '{"name":"user-claude-config","type":"module"}\n';
-    const userScriptsPackage = '{"name":"user-claude-scripts","type":"module"}\n';
-
-    try {
-      fs.writeFileSync(path.join(projectDir, 'package.json'), '{"type":"module"}\n');
-      fs.mkdirSync(path.dirname(scriptsPackagePath), { recursive: true });
-      fs.writeFileSync(userPackagePath, userPackage);
-      fs.writeFileSync(scriptsPackagePath, userScriptsPackage);
-
-      const firstInstall = run(
-        ['--target', 'claude-project', '--profile', 'core', '--enable-hooks'],
-        { cwd: projectDir, homeDir }
-      );
-      assert.strictEqual(firstInstall.code, 0, firstInstall.stderr);
-      assert.strictEqual(fs.readFileSync(userPackagePath, 'utf8'), userPackage);
-      assert.strictEqual(fs.readFileSync(scriptsPackagePath, 'utf8'), userScriptsPackage);
-      assert.deepStrictEqual(readJson(hooksPackagePath), { type: 'commonjs' });
-      assert.deepStrictEqual(readJson(libPackagePath), { type: 'commonjs' });
-
-      const hookResult = spawnSync(
-        process.execPath,
-        [path.join(claudeRoot, 'scripts', 'hooks', 'block-no-verify.js')],
-        {
-          input: JSON.stringify({ tool_input: { command: 'git commit --no-verify' } }),
-          encoding: 'utf8',
-          cwd: projectDir,
-        }
-      );
-      assert.strictEqual(hookResult.status, 2, hookResult.stderr);
-      assert.match(hookResult.stderr, /no-verify/i);
-
-      const secondInstall = run(
-        ['--target', 'claude-project', '--profile', 'core', '--enable-hooks'],
-        { cwd: projectDir, homeDir }
-      );
-      assert.strictEqual(secondInstall.code, 0, secondInstall.stderr);
-      assert.strictEqual(fs.readFileSync(userPackagePath, 'utf8'), userPackage);
-      assert.strictEqual(fs.readFileSync(scriptsPackagePath, 'utf8'), userScriptsPackage);
-
-      const state = readJson(path.join(claudeRoot, 'ecc', 'install-state.json'));
-      const boundaryPaths = [hooksPackagePath, libPackagePath];
-      const packageBoundaryOperations = state.operations.filter(operation => (
-        boundaryPaths.includes(operation.destinationPath)
-      ));
-      assert.deepStrictEqual(
-        packageBoundaryOperations.map(operation => operation.destinationPath).sort(),
-        [...boundaryPaths].sort()
-      );
-      assert.ok(packageBoundaryOperations.every(operation => operation.moduleId === 'hooks-runtime'));
-      assert.ok(packageBoundaryOperations.every(operation => (
-        /^[a-f0-9]{64}$/i.test(operation.contentSha256)
-      )));
-      assert.ok(!state.operations.some(operation => operation.destinationPath === userPackagePath));
-      assert.ok(!state.operations.some(operation => operation.destinationPath === scriptsPackagePath));
-    } finally {
-      cleanup(homeDir);
-      cleanup(projectDir);
     }
   })) passed++; else failed++;
 

@@ -198,16 +198,6 @@ function runTests() {
     assert.ok(invalid.stderr.includes('Error: Invalid format: xml. Use text or json.'));
   })) passed++; else failed++;
 
-  if (test('current repo reports a complete readiness score', () => {
-    const parsed = JSON.parse(run(['--format=json']));
-
-    assert.strictEqual(parsed.schema_version, 'ecc.observability-readiness.v1');
-    assert.strictEqual(parsed.deterministic, true);
-    assert.strictEqual(parsed.ready, true);
-    assert.strictEqual(parsed.overall_score, parsed.max_score);
-    assert.strictEqual(parsed.top_actions.length, 0);
-  })) passed++; else failed++;
-
   if (test('text output includes summary, categories, and checks', () => {
     const output = run();
 

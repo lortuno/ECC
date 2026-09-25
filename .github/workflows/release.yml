@@ -49,8 +49,8 @@ jobs:
       - name: Run supply-chain IOC scan
         run: npm run security:ioc-scan
 
-      - name: Verify OpenCode package payload
-        run: node tests/scripts/build-opencode.test.js
+      - name: Run repository test suite
+        run: node tests/run-all.js
 
       - name: Validate version tag
         run: |
@@ -72,9 +72,6 @@ jobs:
             echo "Run: ./scripts/release.sh $TAG_VERSION"
             exit 1
           fi
-
-      - name: Verify release metadata stays in sync
-        run: node tests/plugin-manifest.test.js
 
       - name: Check npm publish state
         id: npm_publish_state

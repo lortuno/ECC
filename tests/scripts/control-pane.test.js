@@ -603,10 +603,13 @@ async function runTests() {
 
   if (
     await test('CLI browser opener handles spawn errors', async () => {
-      const source = fs.readFileSync(SCRIPT, 'utf8');
+      const platformLaunchSource = fs.readFileSync(
+        path.join(__dirname, '..', '..', 'scripts', 'lib', 'platform-launch.js'),
+        'utf8'
+      );
 
-      assert.match(source, /child\.on\('error'/);
-      assert.match(source, /child\.unref\(\)/);
+      assert.match(platformLaunchSource, /child\.on\('error'/);
+      assert.match(platformLaunchSource, /child\.unref\(\)/);
     })
   )
     passed++;

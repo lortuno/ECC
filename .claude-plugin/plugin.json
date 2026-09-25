@@ -1,7 +1,7 @@
 {
   "name": "ecc",
   "version": "2.2.2",
-  "description": "Harness-native ECC plugin for PHP/JS/React engineering teams - 32 agents, 116 skills, 68 legacy command shims, reusable hooks, rules, MCP conventions, and operator workflows for Claude Code",
+  "description": "Harness-native ECC plugin for PHP/JS/React engineering teams - 32 agents, 119 skills, 68 legacy command shims, reusable hooks, rules, MCP conventions, and operator workflows for Claude Code",
   "author": {
     "name": "Affaan Mustafa",
     "url": "https://x.com/affaanmustafa"

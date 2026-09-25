@@ -11,7 +11,7 @@
     {
       "name": "ecc",
       "source": "./",
-      "description": "Harness-native ECC operator layer - 32 agents, 116 skills, 68 legacy command shims, reusable hooks, rules, selective install profiles, and production-ready workflows for Claude Code, tuned for PHP/JS/React/Azure engineering",
+      "description": "Harness-native ECC operator layer - 32 agents, 119 skills, 68 legacy command shims, reusable hooks, rules, selective install profiles, and production-ready workflows for Claude Code, tuned for PHP/JS/React/Azure engineering",
       "version": "2.2.2",
       "author": {
         "name": "Affaan Mustafa",

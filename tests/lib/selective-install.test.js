@@ -333,15 +333,15 @@ function runTests() {
   if (test('multiple --without flags exclude multiple modules', () => {
     const plan = resolveInstallPlan({
       profileId: 'full',
-      excludeComponentIds: ['capability:media', 'capability:social', 'capability:supply-chain'],
+      excludeComponentIds: ['capability:optimization', 'capability:orchestration', 'capability:research'],
       target: 'claude',
     });
-    assert.ok(!plan.selectedModuleIds.includes('media-generation'));
-    assert.ok(!plan.selectedModuleIds.includes('social-distribution'));
-    assert.ok(!plan.selectedModuleIds.includes('supply-chain-domain'));
-    assert.ok(plan.excludedModuleIds.includes('media-generation'));
-    assert.ok(plan.excludedModuleIds.includes('social-distribution'));
-    assert.ok(plan.excludedModuleIds.includes('supply-chain-domain'));
+    assert.ok(!plan.selectedModuleIds.includes('optimization-workflows'));
+    assert.ok(!plan.selectedModuleIds.includes('orchestration'));
+    assert.ok(!plan.selectedModuleIds.includes('research-apis'));
+    assert.ok(plan.excludedModuleIds.includes('optimization-workflows'));
+    assert.ok(plan.excludedModuleIds.includes('orchestration'));
+    assert.ok(plan.excludedModuleIds.includes('research-apis'));
   })) passed++; else failed++;
 
   // ─── Combined --with + --without ───
@@ -364,8 +364,8 @@ function runTests() {
   if (test('--without on a dependency of --with raises an error', () => {
     assert.throws(
       () => resolveInstallPlan({
-        includeComponentIds: ['capability:social'],
-        excludeComponentIds: ['capability:content'],
+        includeComponentIds: ['capability:optimization'],
+        excludeComponentIds: ['capability:operators'],
       }),
       /depends on excluded module/
     );
@@ -514,45 +514,6 @@ function runTests() {
       assert.ok(result.includes('capability:security'), 'Should show included component');
       assert.ok(result.includes('capability:orchestration'), 'Should show excluded component');
       assert.ok(result.includes('security'), 'Selected modules should include security');
-    } finally {
-      fs.rmSync(homeDir, { recursive: true, force: true });
-      fs.rmSync(projectDir, { recursive: true, force: true });
-    }
-  })) passed++; else failed++;
-
-  if (test('end-to-end: --profile minimal --target zed --dry-run --json plans project adapter', () => {
-    const { execFileSync } = require('child_process');
-    const scriptPath = path.join(__dirname, '..', '..', 'scripts', 'install-apply.js');
-    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'selective-e2e-'));
-    const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'selective-e2e-zed-project-'));
-
-    try {
-      const result = execFileSync('node', [
-        scriptPath,
-        '--profile', 'minimal',
-        '--target', 'zed',
-        '--dry-run',
-        '--json',
-      ], {
-        cwd: projectDir,
-        env: { ...process.env, HOME: homeDir },
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      const parsed = JSON.parse(result);
-
-      assert.strictEqual(parsed.dryRun, true);
-      assert.strictEqual(parsed.plan.target, 'zed');
-      assert.strictEqual(parsed.plan.adapter.id, 'zed-project');
-      assert.strictEqual(parsed.plan.installRoot, path.join(fs.realpathSync(projectDir), '.zed'));
-      assert.ok(
-        parsed.plan.operations.some(operation => normalizePlanPath(operation.sourceRelativePath) === '.zed/settings.json'),
-        'Should include Zed native settings operation'
-      );
-      assert.ok(
-        !parsed.plan.operations.some(operation => operation.moduleId === 'hooks-runtime'),
-        'Zed minimal dry-run should not install hook runtime files'
-      );
     } finally {
       fs.rmSync(homeDir, { recursive: true, force: true });
       fs.rmSync(projectDir, { recursive: true, force: true });

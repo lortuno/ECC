@@ -100,12 +100,10 @@ function runTests() {
       'Should include lang:c');
     assert.ok(components.some(component => component.id === 'capability:security'),
       'Should include capability:security');
-    assert.ok(components.some(component => component.id === 'capability:machine-learning'),
-      'Should include capability:machine-learning');
-    assert.ok(components.some(component => component.id === 'agent:mle-reviewer'),
-      'Should include agent:mle-reviewer');
-    assert.ok(components.some(component => component.id === 'skill:mle-workflow'),
-      'Should include skill:mle-workflow');
+    assert.ok(components.some(component => component.id === 'capability:database'),
+      'Should include capability:database');
+    assert.ok(components.some(component => component.id === 'framework:symfony'),
+      'Should include framework:symfony');
   })) passed++; else failed++;
 
   if (test('every locale alias resolves to a real component with a real module', () => {
@@ -230,45 +228,6 @@ function runTests() {
     assert.ok(languages.includes('fsharp'));
   })) passed++; else failed++;
 
-  if (test('resolves a real project profile with target-specific skips', () => {
-    const projectRoot = '/workspace/app';
-    const plan = resolveInstallPlan({ profileId: 'developer', target: 'cursor', projectRoot });
-    assert.ok(plan.selectedModuleIds.includes('rules-core'), 'Should keep rules-core');
-    assert.ok(plan.selectedModuleIds.includes('commands-core'), 'Should keep commands-core');
-    assert.ok(!plan.selectedModuleIds.includes('orchestration'),
-      'Should not select unsupported orchestration module for cursor');
-    assert.ok(plan.skippedModuleIds.includes('orchestration'),
-      'Should report unsupported orchestration module as skipped');
-    assert.strictEqual(plan.targetAdapterId, 'cursor-project');
-    assert.strictEqual(plan.targetRoot, path.join(projectRoot, '.cursor'));
-    assert.strictEqual(plan.installStatePath, path.join(projectRoot, '.cursor', 'ecc-install-state.json'));
-    assert.ok(plan.operations.length > 0, 'Should include scaffold operations');
-    assert.ok(
-      plan.operations.some(operation => (
-        operation.sourceRelativePath === '.cursor/hooks.json'
-        && operation.destinationPath === path.join(projectRoot, '.cursor', 'hooks.json')
-        && operation.strategy === 'preserve-relative-path'
-      )),
-      'Should preserve non-rule Cursor platform files'
-    );
-    assert.ok(
-      plan.operations.some(operation => (
-        operation.sourceRelativePath === '.mcp.json'
-        && operation.destinationPath === path.join(projectRoot, '.cursor', 'mcp.json')
-        && operation.kind === 'merge-json'
-        && operation.strategy === 'merge-json'
-      )),
-      'Should materialize Cursor MCP config at the native project path'
-    );
-    assert.ok(
-      plan.operations.some(operation => (
-        operation.sourceRelativePath === '.cursor/rules/common-agents.md'
-        && operation.destinationPath === path.join(projectRoot, '.cursor', 'rules', 'common-agents.mdc')
-        && operation.strategy === 'flatten-copy'
-      )),
-      'Should produce Cursor .mdc rules while preferring native Cursor platform copies over duplicate rules-core files'
-    );
-  })) passed++; else failed++;
 
   if (test('resolves antigravity profiles while skipping only unsupported modules', () => {
     const projectRoot = '/workspace/app';
@@ -313,132 +272,6 @@ function runTests() {
     assert.ok(!plan.selectedModuleIds.includes('hooks-runtime'),
       'minimal profile should not install hooks-runtime');
     assert.ok(plan.operations.length > 0, 'Should include install operations');
-  })) passed++; else failed++;
-
-  if (test('resolves Qwen minimal profile while leaving hooks out', () => {
-    const homeDir = '/Users/example';
-    const plan = resolveInstallPlan({
-      profileId: 'minimal',
-      target: 'qwen',
-      homeDir,
-    });
-
-    assert.deepStrictEqual(
-      plan.selectedModuleIds,
-      [
-        'rules-core',
-        'agents-core',
-        'commands-core',
-        'platform-configs',
-        'skill-unified-memory',
-        'workflow-quality'
-      ]
-    );
-    assert.deepStrictEqual(plan.skippedModuleIds, []);
-    assert.strictEqual(plan.targetAdapterId, 'qwen-home');
-    assert.strictEqual(plan.targetRoot, path.join(homeDir, '.qwen'));
-    assert.ok(
-      plan.operations.some(operation => operation.sourceRelativePath === '.qwen'),
-      'Should install Qwen native config'
-    );
-    assert.ok(
-      !plan.operations.some(operation => operation.destinationPath.includes(`${path.sep}hooks`)),
-      'Qwen minimal profile should not install hook runtime files'
-    );
-  })) passed++; else failed++;
-
-  if (test('resolves Zed minimal profile with project settings and without hooks', () => {
-    const projectRoot = '/workspace/zed-app';
-    const plan = resolveInstallPlan({
-      profileId: 'minimal',
-      target: 'zed',
-      projectRoot,
-    });
-
-    assert.deepStrictEqual(
-      plan.selectedModuleIds,
-      [
-        'rules-core',
-        'agents-core',
-        'commands-core',
-        'platform-configs',
-        'skill-unified-memory',
-        'workflow-quality'
-      ]
-    );
-    assert.deepStrictEqual(plan.skippedModuleIds, []);
-    assert.strictEqual(plan.targetAdapterId, 'zed-project');
-    assert.strictEqual(plan.targetRoot, path.join(projectRoot, '.zed'));
-    assert.ok(
-      plan.operations.some(operation => operation.sourceRelativePath === '.zed'),
-      'Should install Zed native project settings'
-    );
-    assert.ok(
-      !plan.selectedModuleIds.includes('hooks-runtime')
-      && !plan.operations.some(operation => operation.moduleId === 'hooks-runtime'),
-      'Zed minimal profile should not install hook runtime files'
-    );
-  })) passed++; else failed++;
-
-  if (test('resolves machine-learning component with workflow dependencies', () => {
-    const plan = resolveInstallPlan({
-      includeComponentIds: ['capability:machine-learning'],
-      target: 'claude',
-      projectRoot: '/workspace/ml-app',
-    });
-
-    assert.ok(plan.selectedModuleIds.includes('machine-learning'),
-      'Should include machine-learning module');
-    assert.ok(plan.selectedModuleIds.includes('framework-language'),
-      'Should include Python and framework-language support');
-    assert.ok(plan.selectedModuleIds.includes('workflow-quality'),
-      'Should include eval and verification workflows');
-    assert.ok(plan.selectedModuleIds.includes('database'),
-      'Should include database/data persistence support');
-    assert.ok(plan.selectedModuleIds.includes('devops-infra'),
-      'Should include deployment and container support');
-    assert.ok(plan.selectedModuleIds.includes('security'),
-      'Should include security through machine-learning dependencies');
-    assert.ok(plan.operations.some(operation => (
-      operation.sourceRelativePath === 'skills/mle-workflow'
-    )), 'Should install the MLE workflow skill');
-  })) passed++; else failed++;
-
-  if (test('resolves machine-learning component on JoyCode and Qwen targets', () => {
-    for (const target of ['joycode', 'qwen']) {
-      const plan = resolveInstallPlan({
-        includeComponentIds: ['capability:machine-learning'],
-        target,
-        projectRoot: '/workspace/ml-app',
-        homeDir: '/Users/example',
-      });
-
-      assert.ok(plan.selectedModuleIds.includes('machine-learning'),
-        `Should include machine-learning module for ${target}`);
-      assert.ok(!plan.skippedModuleIds.includes('machine-learning'),
-        `Should not skip machine-learning module for ${target}`);
-      assert.ok(plan.operations.some(operation => (
-        operation.sourceRelativePath === 'skills/mle-workflow'
-      )), `Should install the MLE workflow skill for ${target}`);
-    }
-  })) passed++; else failed++;
-
-  if (test('minimal machine-learning install includes MLE reviewer agent surface', () => {
-    const plan = resolveInstallPlan({
-      profileId: 'minimal',
-      includeComponentIds: ['capability:machine-learning'],
-      target: 'claude',
-      projectRoot: '/workspace/ml-app',
-    });
-
-    assert.ok(plan.selectedModuleIds.includes('agents-core'),
-      'Minimal install should keep the agent surface available');
-    assert.ok(plan.operations.some(operation => (
-      operation.sourceRelativePath === 'agents'
-    )), 'Should install the agent directory that contains mle-reviewer.md');
-    assert.ok(plan.operations.some(operation => (
-      operation.sourceRelativePath === 'skills/mle-workflow'
-    )), 'Should install the MLE workflow skill');
   })) passed++; else failed++;
 
   if (test('resolves explicit modules with dependency expansion', () => {
@@ -611,10 +444,10 @@ function runTests() {
   if (test('fails when a selected component depends on an excluded component module', () => {
     assert.throws(
       () => resolveInstallPlan({
-        includeComponentIds: ['capability:social'],
-        excludeComponentIds: ['capability:content'],
+        includeComponentIds: ['capability:optimization'],
+        excludeComponentIds: ['capability:operators'],
       }),
-      /depends on excluded module business-content/
+      /depends on excluded module operator-workflows/
     );
   })) passed++; else failed++;
 

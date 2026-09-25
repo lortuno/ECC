@@ -294,6 +294,8 @@ test('fresh install uses supported Claude arguments and follows the verification
       [
         'plugin', 'install', 'ecc@ecc',
         '--scope', 'project',
+        '--config', 'hooks_enabled=true',
+        '--config', 'hook_profile=strict',
       ],
       ['plugin', 'list', '--json'],
     ]);
@@ -722,6 +724,8 @@ test('provider failures stop later operations and leave settings untouched', () 
   const installArgv = [
     'plugin', 'install', 'ecc@ecc',
     '--scope', 'user',
+    '--config', 'hooks_enabled=true',
+    '--config', 'hook_profile=standard',
   ];
   withFixture({
     failures: [{

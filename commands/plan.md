@@ -112,7 +112,7 @@ When called with a `.prd.md` file, write the plan to `.claude/plans/{kebab-case-
 After writing the artifact, report its path and WAIT for confirmation before writing code.
 
 > **Visual review:** instead of asking for a typed confirmation, you can open the
-> artifact in the browser Plan Canvas (`/plan-canvas`, or the `plan-canvas` skill):
+> artifact in the browser Plan Canvas (the `plan-canvas` skill):
 > the user annotates the plan in place and clicks **Approve plan** or **Request
 > changes**, which arrives as your confirmation signal.
 
@@ -186,13 +186,13 @@ If you want changes, respond with:
 ## Integration with Other Commands
 
 After planning:
-- Use `/plan-canvas` to run the confirmation gate visually in the browser (annotate + approve)
+- Use the `plan-canvas` skill to run the confirmation gate visually in the browser (annotate + approve)
 - Use the `tdd-workflow` skill to implement with test-driven development
 - Use `/build-fix` if build errors occur
 - Use `/code-review` to review completed implementation
 - Use `/pr` or `/prp-pr` to open a pull request
 
-> **Need requirements first?** Use `/plan-prd` for a lean PRD at `.claude/prds/{name}.prd.md`.
+> **Need requirements first?** Use `/prp-prd` for a lean PRD at `.claude/prds/{name}.prd.md`.
 >
 > **Need the legacy PRP flow?** Use `/prp-plan` for deep PRP planning with `.claude/PRPs/` artifacts. Use `/prp-implement` to execute those plans with rigorous validation loops.
 

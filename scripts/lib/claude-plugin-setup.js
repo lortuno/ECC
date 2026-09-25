@@ -577,10 +577,14 @@ function ensurePluginAtScope(options) {
     );
     return 'updated';
   }
+  const { hooks_enabled: hooksEnabled, hook_profile: hookProfile } = options.hookConfiguration
+    || { hooks_enabled: options.hooks !== 'off', hook_profile: options.hookProfile || hookOptions(options.hooks).hook_profile };
   run(
     [
       'plugin', 'install', CURRENT_PLUGIN_ID,
       '--scope', options.scope,
+      '--config', `hooks_enabled=${hooksEnabled}`,
+      '--config', `hook_profile=${hookProfile}`,
     ],
     { cwd: options.projectRoot, phase: 'plugin-install' }
   );
@@ -618,6 +622,12 @@ function setupClaudePlugin(options = {}, dependencies = {}) {
   const hooks = options.hooks === undefined && inventory.installed
     ? deriveHookMode(initialSettings)
     : (options.hooks || 'standard');
+  // hook_profile to persist even when hooks are 'off': preserve the stored
+  // profile (so re-enabling later restores it) unless the caller explicitly
+  // requested a specific non-off profile this run.
+  const hookProfile = options.hooks !== undefined && options.hooks !== 'off'
+    ? options.hooks
+    : (inventory.installed ? readStoredHookOptions(initialSettings).hook_profile : 'standard');
   const marketplaces = parseMarketplaceList(
     run(
       ['plugin', 'marketplace', 'list', '--json'],
@@ -654,6 +664,7 @@ function setupClaudePlugin(options = {}, dependencies = {}) {
   });
   const action = ensurePluginAtScope({
     hooks,
+    hookProfile,
     installed: inventory.installed,
     projectRoot: paths.projectRoot,
     run,

@@ -187,67 +187,11 @@
       ]
     },
     {
-      "id": "capability:prediction-markets",
-      "family": "capability",
-      "description": "Public, non-advisory prediction-market and Ito basket research workflows with gated Ito API access.",
-      "modules": [
-        "prediction-market-skills"
-      ]
-    },
-    {
-      "id": "capability:operator-desk-patterns",
-      "family": "capability",
-      "description": "Operator desk patterns for agents that draft, gate, and paper external counterparty interactions.",
-      "modules": [
-        "operator-desk-patterns"
-      ]
-    },
-    {
-      "id": "capability:ito-compute",
-      "family": "capability",
-      "description": "Authenticated It\u00f4 GPU inventory, RFQ, status, device revocation, and explicitly gated node-qualification workflows through the separately installed canonical CLI.",
-      "modules": [
-        "ito-compute"
-      ]
-    },
-    {
-      "id": "capability:nasiko-control-plane",
-      "family": "capability",
-      "description": "Experimental Nasiko CLI lifecycle bridge guidance for pinned installation, read-only status, qualified uninstall, and opt-in telemetry boundaries.",
-      "modules": [
-        "nasiko-control-plane"
-      ]
-    },
-    {
-      "id": "capability:social",
-      "family": "capability",
-      "description": "Social publishing and distribution skills.",
-      "modules": [
-        "social-distribution"
-      ]
-    },
-    {
-      "id": "capability:media",
-      "family": "capability",
-      "description": "Media generation, technical explainers, and AI-assisted editing skills.",
-      "modules": [
-        "media-generation"
-      ]
-    },
-    {
       "id": "capability:orchestration",
       "family": "capability",
       "description": "Worktree and tmux orchestration runtime and workflow docs.",
       "modules": [
         "orchestration"
-      ]
-    },
-    {
-      "id": "lang:swift",
-      "family": "language",
-      "description": "Swift, SwiftUI, and Apple platform engineering guidance.",
-      "modules": [
-        "swift-apple"
       ]
     },
     {
@@ -356,30 +300,6 @@
       "description": "Deployment, Docker, and infrastructure patterns.",
       "modules": [
         "devops-infra"
-      ]
-    },
-    {
-      "id": "capability:machine-learning",
-      "family": "capability",
-      "description": "Production machine-learning engineering workflows for data contracts, reproducible training, evaluation, deployment, monitoring, and rollback.",
-      "modules": [
-        "machine-learning"
-      ]
-    },
-    {
-      "id": "capability:supply-chain",
-      "family": "capability",
-      "description": "Supply chain, logistics, procurement, and manufacturing domain skills.",
-      "modules": [
-        "supply-chain-domain"
-      ]
-    },
-    {
-      "id": "capability:documents",
-      "family": "capability",
-      "description": "Document processing, conversion, and translation skills.",
-      "modules": [
-        "document-processing"
       ]
     },
     {
@@ -588,14 +508,6 @@
       "description": "Deep research and investigation workflows.",
       "modules": [
         "research-apis"
-      ]
-    },
-    {
-      "id": "skill:mle-workflow",
-      "family": "skill",
-      "description": "Production machine-learning engineering workflow for data contracts, reproducible training, evaluation, deployment, monitoring, and rollback.",
-      "modules": [
-        "machine-learning"
       ]
     }
   ]
