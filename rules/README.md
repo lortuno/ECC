@@ -16,17 +16,9 @@ rules/
 │   ├── agents.md
 │   └── security.md
 ├── typescript/      # TypeScript/JavaScript specific
-├── angular/         # Angular specific
-├── vue/             # Vue 3 specific
-├── nuxt/            # Nuxt 4 specific
-├── python/          # Python specific
-├── golang/          # Go specific
-├── web/             # Web and frontend specific
-├── react-native/    # React Native / Expo specific
-├── swift/           # Swift specific
+├── react/           # React specific
 ├── php/             # PHP specific
-├── ruby/            # Ruby / Rails specific
-└── arkts/           # HarmonyOS / ArkTS specific
+└── web/             # Web and frontend specific
 ```
 
 - **common/** contains universal principles — no language-specific code examples.
@@ -39,20 +31,12 @@ rules/
 ```bash
 # Install common + one or more language-specific rule sets
 ./install.sh typescript
-./install.sh angular
-./install.sh vue
-./install.sh nuxt
-./install.sh python
-./install.sh golang
-./install.sh web
-./install.sh react-native
-./install.sh swift
+./install.sh react
 ./install.sh php
-./install.sh ruby
-./install.sh arkts
+./install.sh web
 
 # Install multiple languages at once
-./install.sh typescript python
+./install.sh typescript react
 ```
 
 ### Option 2: Manual Installation
@@ -76,17 +60,9 @@ cp -r rules/common ~/.claude/rules/ecc/
 
 # Install language-specific rules based on your project's tech stack
 cp -r rules/typescript ~/.claude/rules/ecc/
-cp -r rules/angular ~/.claude/rules/ecc/
-cp -r rules/vue ~/.claude/rules/ecc/
-cp -r rules/nuxt ~/.claude/rules/ecc/
-cp -r rules/python ~/.claude/rules/ecc/
-cp -r rules/golang ~/.claude/rules/ecc/
-cp -r rules/web ~/.claude/rules/ecc/
-cp -r rules/react-native ~/.claude/rules/ecc/
-cp -r rules/swift ~/.claude/rules/ecc/
+cp -r rules/react ~/.claude/rules/ecc/
 cp -r rules/php ~/.claude/rules/ecc/
-cp -r rules/ruby ~/.claude/rules/ecc/
-cp -r rules/arkts ~/.claude/rules/ecc/
+cp -r rules/web ~/.claude/rules/ecc/
 
 # Attention ! ! ! Configure according to your actual project requirements; the configuration here is for reference only.
 ```
@@ -104,13 +80,13 @@ cp -r rules/typescript .claude/rules/ecc/
 - **Rules** define standards, conventions, and checklists that apply broadly (e.g., "80% test coverage", "no hardcoded secrets").
 - **Skills** (`skills/` directory) provide deep, actionable reference material for specific tasks (e.g., `python-patterns`, `golang-testing`).
 
-Language-specific rule files reference relevant skills where appropriate. Rules tell you _what_ to do; skills tell you _how_ to do it.
+Language-specific rule files reference relevant skills where appropriate (e.g., `symfony-patterns`, `react-patterns`). Rules tell you _what_ to do; skills tell you _how_ to do it.
 
 ## Adding a New Language
 
-To add support for a new language (e.g., `rust/`):
+To add support for a new language (e.g., `python/`):
 
-1. Create a `rules/rust/` directory
+1. Create a `rules/python/` directory
 2. Add files that extend the common rules:
    - `coding-style.md` — formatting tools, idioms, error handling patterns
    - `testing.md` — test framework, coverage tools, test organization
@@ -130,13 +106,13 @@ For non-language domains like `web/`, follow the same layered pattern when there
 When language-specific rules and common rules conflict, **language-specific rules take precedence** (specific overrides general). This follows the standard layered configuration pattern (similar to CSS specificity or `.gitignore` precedence).
 
 - `rules/common/` defines universal defaults applicable to all projects.
-- `rules/golang/`, `rules/python/`, `rules/swift/`, `rules/php/`, `rules/typescript/`, `rules/react-native/`, etc. override those defaults where language idioms differ.
+- `rules/php/`, `rules/typescript/`, `rules/react/`, `rules/web/` override those defaults where language or framework idioms differ.
 
 ### Example
 
-`common/coding-style.md` recommends immutability as a default principle. A language-specific `golang/coding-style.md` can override this:
+`common/coding-style.md` recommends immutability as a default principle. A language-specific `php/coding-style.md` can override this where PHP idioms differ:
 
-> Idiomatic Go uses pointer receivers for struct mutation — see [common/coding-style.md](../common/coding-style.md) for the general principle, but Go-idiomatic mutation is preferred here.
+> See [common/coding-style.md](../common/coding-style.md) for the general principle, but PHP-idiomatic mutation is preferred here (e.g. `DateTime` vs `DateTimeImmutable`).
 
 ### Common rules with override notes
 

@@ -180,7 +180,7 @@ def load_skills(project_path: str) -> List[Dict]:
             {'name': 'golang-patterns', 'description': 'Go idioms and best practices', 'category': 'Go'},
             {'name': 'django-patterns', 'description': 'Django patterns and best practices', 'category': 'Python'},
             {'name': 'springboot-patterns', 'description': 'Java Spring Boot patterns', 'category': 'Java'},
-            {'name': 'laravel-patterns', 'description': 'Laravel architecture patterns', 'category': 'PHP'},
+            {'name': 'symfony-patterns', 'description': 'Symfony architecture patterns', 'category': 'PHP'},
         ]
     
     return skills

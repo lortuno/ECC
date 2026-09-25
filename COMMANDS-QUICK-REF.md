@@ -1,6 +1,6 @@
 # Commands Quick Reference
 
-> 94 slash commands installed globally. Type `/` in any Claude Code session to invoke.
+> 68 slash commands installed globally. Type `/` in any Claude Code session to invoke.
 
 ---
 
@@ -9,14 +9,11 @@
 | Command | What it does |
 |---------|-------------|
 | `/plan` | Restate requirements, assess risks, write step-by-step implementation plan — **waits for your confirm before touching code** |
-| `/plan-canvas` | Open a plan or HTML artifact in the browser Plan Canvas for annotate-and-approve review |
-| `/plan-prd` | Generate a lean, problem-first PRD and hand off to `/plan` for implementation planning |
 | `/feature-dev` | Guided feature development with codebase understanding and architecture focus |
 | `/code-review` | Code review — local uncommitted changes or GitHub PR (pass PR number/URL for PR mode) |
 | `/review-pr` | Comprehensive PR review using specialized agents |
 | `/build-fix` | Detect and fix build errors — delegates to the right build-resolver agent automatically |
-| `/quality-gate` | Quality gate check against project standards |
-| `/santa-loop` | Adversarial dual-review convergence loop — two independent model reviewers must both approve before code ships |
+| `/quality-gate` | Run the ECC formatter quality gate for a single file and report remediation steps |
 
 ---
 
@@ -25,11 +22,6 @@
 | Command | What it does |
 |---------|-------------|
 | `/test-coverage` | Analyze coverage, identify gaps, and generate missing tests toward the target threshold |
-| `/go-test` | TDD workflow for Go (table-driven, 80%+ coverage with `go test -cover`) |
-| `/kotlin-test` | TDD for Kotlin (Kotest + Kover) |
-| `/rust-test` | TDD for Rust (cargo test, `cargo-llvm-cov`) |
-| `/cpp-test` | TDD for C++ (GoogleTest + gcov/lcov) |
-| `/flutter-test` | Run Flutter/Dart tests (unit, widget, golden, integration), report and fix failures |
 | `/react-test` | TDD for React (React Testing Library, Vitest or Jest, coverage targets) |
 
 ---
@@ -39,15 +31,7 @@
 | Command | What it does |
 |---------|-------------|
 | `/code-review` | Code review — local uncommitted changes or GitHub PR (pass PR number/URL for PR mode) |
-| `/python-review` | Python — PEP 8, type hints, security, idiomatic patterns |
-| `/go-review` | Go — idiomatic patterns, concurrency safety, error handling |
-| `/kotlin-review` | Kotlin — null safety, coroutine safety, clean architecture |
-| `/rust-review` | Rust — ownership, lifetimes, unsafe usage |
-| `/cpp-review` | C++ — memory safety, modern idioms, concurrency |
-| `/flutter-review` | Flutter/Dart — widget best practices, state management, accessibility, security |
-| `/react-review` | React/JSX — hook correctness, render performance, server/client boundaries, accessibility |
-| `/vue-review` | Vue.js — Composition API correctness, reactivity, composable patterns, template security, accessibility, performance |
-| `/fastapi-review` | FastAPI — async correctness, dependency injection, Pydantic schemas, security |
+| `/react-review` | React/JSX — hook correctness, render performance, server/client boundaries, accessibility (runs alongside the TypeScript reviewer on TSX/JSX changes) |
 
 ---
 
@@ -56,12 +40,6 @@
 | Command | What it does |
 |---------|-------------|
 | `/build-fix` | Detect and fix build errors — delegates to the right build-resolver agent automatically |
-| `/go-build` | Fix Go build errors and `go vet` warnings |
-| `/kotlin-build` | Fix Kotlin/Gradle compiler errors |
-| `/rust-build` | Fix Rust build + borrow checker issues |
-| `/cpp-build` | Fix C++ CMake and linker problems |
-| `/gradle-build` | Fix Gradle errors for Android / KMP |
-| `/flutter-build` | Fix Dart analyzer errors and Flutter build failures |
 | `/react-build` | Fix React build failures (Vite, webpack, Next.js, CRA, Parcel, esbuild, Bun) |
 
 ---
@@ -87,7 +65,7 @@
 | `/prp-plan` | Create a comprehensive feature implementation plan with codebase analysis and pattern extraction |
 | `/prp-implement` | Execute an implementation plan with rigorous validation loops |
 | `/prp-commit` | Quick commit with natural language file targeting |
-| `/prp-pr` | Create a GitHub PR from the current branch with unpushed commits |
+| `/prp-pr` | Alias of `/pr` for the PRP workflow series |
 
 ---
 
@@ -110,11 +88,11 @@
 | Command | What it does |
 |---------|-------------|
 | `/plan` | Restate requirements, assess risks, write step-by-step implementation plan — **waits for your confirm before touching code** |
-| `/multi-plan` | Multi-model collaborative planning |
-| `/multi-workflow` | Multi-model collaborative development |
-| `/multi-backend` | Backend-focused multi-model development |
-| `/multi-frontend` | Frontend-focused multi-model development |
-| `/multi-execute` | Multi-model collaborative execution |
+| `/multi-plan` | Create a multi-model implementation plan without modifying production code |
+| `/multi-workflow` | Run a full multi-model development workflow with research, planning, execution, optimization, and review |
+| `/multi-backend` | Run a backend-focused multi-model workflow for APIs, algorithms, data, and business logic |
+| `/multi-frontend` | Run a frontend-focused multi-model workflow for components, layouts, animation, and UI polish |
+| `/multi-execute` | Execute a multi-model implementation plan while preserving Claude as the only filesystem writer |
 
 ---
 
@@ -132,9 +110,8 @@
 
 ## Cross-Harness Memory CLI
 
-These are `ecc` CLI commands, not slash commands. They use one inspectable
-Markdown vault across Claude, Codex, Hermes, OpenClaw, Kimi, and other
-harnesses.
+These are `ecc` CLI commands, not slash commands. They back the `unified-memory`
+skill with one inspectable Markdown vault.
 
 | Command | What it does |
 |---------|-------------|
@@ -187,7 +164,7 @@ These lifecycle commands are also available through the `ecc` CLI.
 
 | Command | What it does |
 |---------|-------------|
-| `/refactor-clean` | Remove dead code, consolidate duplicates, clean up structure |
+| `/refactor-clean` | Safely identify and remove dead code with verification after each change |
 
 ---
 
@@ -205,10 +182,8 @@ These lifecycle commands are also available through the `ecc` CLI.
 
 | Command | What it does |
 |---------|-------------|
-| `/loop-start` | Start a recurring agent loop on an interval |
-| `/loop-status` | Check status of running loops |
-| `/gan-build` | Generator/evaluator build loop for implementation tasks, bounded iterations and scoring |
-| `/gan-design` | Generator/evaluator design loop for frontend or visual work, bounded iterations and scoring |
+| `/loop-start` | Start a managed autonomous loop pattern with safety defaults and explicit stop conditions |
+| `/loop-status` | Inspect active loop state, progress, failure signals, and recommended intervention |
 
 ---
 
@@ -220,10 +195,9 @@ These lifecycle commands are also available through the `ecc` CLI.
 | `/project-init` | Detect a project's stack and produce a dry-run ECC onboarding plan |
 | `/harness-audit` | Audit the agent harness configuration for reliability and cost |
 | `/model-route` | Route a task to the right model (Haiku / Sonnet / Opus) |
-| `/pm2` | PM2 process manager initialisation |
 | `/setup-pm` | Configure package manager (npm / pnpm / yarn / bun) |
 | `/auto-update` | Pull the latest ECC repo changes and reinstall the current managed targets |
-| `/cost-report` | Generate a local Claude Code cost report from a cost-tracker SQLite database |
+| `/cost-report` | Generate a local Claude Code cost report from the ECC cost-tracker metrics log |
 | `/security-scan` | Run AgentShield against agent, hook, MCP, permission, and secret surfaces |
 | `/jira` | Retrieve a Jira ticket, analyze requirements, update status, or add comments |
 | `/pr` | Create a GitHub PR from current branch with unpushed commits |
@@ -234,17 +208,9 @@ These lifecycle commands are also available through the `ecc` CLI.
 
 ---
 
-## Marketing
-
-| Command | What it does |
-|---------|-------------|
-| `/marketing-campaign` | Plan and execute a full marketing campaign — positioning, landing page copy, email sequence, social posts, ad variants, video scripts, content calendar |
-
----
-
 ## Retired Commands
 
-These slash commands were retired in favor of skills. The command files still exist under `legacy-command-shims/commands/` for backward compatibility (not part of the default installed surface), but the maintained workflow now lives in the listed skill — invoke the skill directly instead:
+These slash commands were retired in favor of skills — invoke the skill directly instead:
 
 | Retired command | Use this skill instead |
 |---|---|
@@ -253,10 +219,7 @@ These slash commands were retired in favor of skills. The command files still ex
 | `/verify` | `verification-loop` |
 | `/e2e` | `e2e-testing` |
 | `/docs` | `documentation-lookup` |
-| `/claw` | `nanoclaw-repl` |
 | `/context-budget` | `context-budget` |
-| `/devfleet` | `claude-devfleet` |
-| `/orchestrate` | `dmux-workflows` and `autonomous-agent-harness` |
 | `/prompt-optimize` | `prompt-optimizer` |
 | `/rules-distill` | `rules-distill` |
 | `/agent-sort` | `agent-sort` |

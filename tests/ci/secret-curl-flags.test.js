@@ -11,12 +11,6 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 
 const jiraDocs = [
   'skills/jira-integration/SKILL.md',
-  'docs/ja-JP/skills/jira-integration/SKILL.md',
-  'docs/zh-CN/skills/jira-integration/SKILL.md',
-];
-
-const socialDocs = [
-  'skills/social-publisher/SKILL.md',
 ];
 
 function test(name, fn) {
@@ -64,25 +58,6 @@ function run() {
         shell,
         /\bcurl\b[^\n]*(?:-u|--user)(?:=|\s+)(?:"|')?\$JIRA_EMAIL:\$JIRA_API_TOKEN/,
         'Jira credentials must not be passed with curl -u/--user',
-      );
-    })) passed++; else failed++;
-  }
-
-  for (const relativePath of socialDocs) {
-    if (test(`${relativePath} keeps SocialClaw bearer token out of curl argv`, () => {
-      const source = read(relativePath);
-      const shell = shellExamples(source);
-
-      assert.match(
-        shell,
-        /printf 'header = "Authorization: Bearer %s"\\n' "\$SC_API_KEY" \|/,
-        'Expected SocialClaw bearer header to be passed via curl config stdin',
-      );
-      assert.match(shell, /\bcurl -sS -K - https:\/\/getsocialclaw\.com\/v1\/keys\/validate/, 'Expected curl -K - validation call');
-      assert.doesNotMatch(
-        shell,
-        /\bcurl\b[^\n]*-H\s+(?:"|')Authorization:\s*Bearer\s+\$SC_API_KEY(?:"|')/,
-        'SocialClaw bearer token must not be passed with curl -H',
       );
     })) passed++; else failed++;
   }

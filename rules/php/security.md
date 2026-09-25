@@ -16,9 +16,9 @@ paths:
 
 ## Database Safety
 
-- Use prepared statements (`PDO`, Doctrine, Eloquent query builder) for all dynamic queries.
-- Avoid string-building SQL in controllers/views.
-- Scope ORM mass-assignment carefully and whitelist writable fields.
+- Use prepared statements (`PDO`, Doctrine DQL/QueryBuilder, DBAL) for all dynamic queries.
+- Avoid string-building SQL in controllers/templates.
+- Denormalize into DTOs with explicit writable fields; never deserialize a raw request body straight onto an entity.
 
 ## Secrets and Dependencies
 
@@ -34,4 +34,4 @@ paths:
 
 ## Reference
 
-See skill: `laravel-security` for Laravel-specific security guidance.
+See skill: `symfony-security` for Symfony-specific security guidance.

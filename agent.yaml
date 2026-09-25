@@ -91,11 +91,11 @@ skills:
   - kotlin-ktor-patterns
   - kotlin-patterns
   - kotlin-testing
-  - laravel-patterns
-  - laravel-plugin-discovery
-  - laravel-security
-  - laravel-tdd
-  - laravel-verification
+  - symfony-patterns
+  - symfony-bundle-discovery
+  - symfony-security
+  - symfony-tdd
+  - symfony-verification
   - liquid-glass-design
   - logistics-exception-management
   - market-research
@@ -171,9 +171,6 @@ commands:
   - checkpoint
   - code-review
   - cost-report
-  - cpp-build
-  - cpp-review
-  - cpp-test
   - ecc-guide
   - epic-claim
   - epic-decompose
@@ -183,17 +180,7 @@ commands:
   - epic-unblock
   - epic-validate
   - evolve
-  - fastapi-review
   - feature-dev
-  - flutter-build
-  - flutter-review
-  - flutter-test
-  - gan-build
-  - gan-design
-  - go-build
-  - go-review
-  - go-test
-  - gradle-build
   - harness-audit
   - hookify
   - hookify-configure
@@ -203,14 +190,10 @@ commands:
   - instinct-import
   - instinct-status
   - jira
-  - kotlin-build
-  - kotlin-review
-  - kotlin-test
   - learn
   - learn-eval
   - loop-start
   - loop-status
-  - marketing-campaign
   - model-route
   - multi-backend
   - multi-execute
@@ -224,20 +207,16 @@ commands:
   - orch-refine-code
   - orch-review
   - plan
-  - plan-canvas
-  - plan-prd
-  - pm2
+  - pr
+  - project-init
   - projects
   - promote
-  - project-init
-  - pr
   - prp-commit
   - prp-implement
   - prp-plan
   - prp-pr
   - prp-prd
   - prune
-  - python-review
   - quality-gate
   - react-build
   - react-review
@@ -245,10 +224,6 @@ commands:
   - refactor-clean
   - resume-session
   - review-pr
-  - rust-build
-  - rust-review
-  - rust-test
-  - santa-loop
   - save-session
   - security-scan
   - sessions
@@ -258,7 +233,6 @@ commands:
   - test-coverage
   - update-codemaps
   - update-docs
-  - vue-review
 tags:
   - agent-harness
   - developer-tools

@@ -78,8 +78,8 @@ function runTests() {
     assert.ok(/flag it as a blocking issue/i.test(body), 'missing blocking-issue rule');
   })) passed++; else failed++;
 
-  if (test('boundary with team-builder and council is explicit', () => {
-    assert.ok(body.includes('## Relationship to council and team-builder'), 'missing boundary section');
+  if (test('boundary with team-builder and santa-method is explicit', () => {
+    assert.ok(body.includes('## Relationship to team-builder and santa-method'), 'missing boundary section');
     assert.ok(body.includes('team-builder'), 'missing team-builder reference');
     assert.ok(/preset four-lens/i.test(body), 'missing preset positioning');
   })) passed++; else failed++;
@@ -91,10 +91,9 @@ function runTests() {
 
   if (test('every referenced skill, agent, and command resolves in the repo', () => {
     const refs = [
-      'skills/council/SKILL.md',
       'skills/team-builder/SKILL.md',
       'skills/santa-method/SKILL.md',
-      'commands/plan-prd.md',
+      'commands/prp-prd.md',
       'commands/plan.md',
       'commands/epic-decompose.md',
       'commands/save-session.md',

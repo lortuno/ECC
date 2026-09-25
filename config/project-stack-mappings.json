@@ -138,10 +138,11 @@
     },
     {
       "id": "php-symfony",
-      "name": "PHP / symfony",
+      "name": "PHP / Symfony",
       "indicators": [
         { "file": "composer.json" },
-        { "file": "artisan" },
+        { "file": "symfony.lock" },
+        { "file": "bin/console" },
         { "file": "composer.lock" }
       ],
       "rules": ["common", "php"],
@@ -150,17 +151,18 @@
         "symfony-tdd",
         "symfony-verification",
         "symfony-security",
+        "symfony-bundle-discovery",
         "tdd-workflow",
         "verification-loop"
       ],
       "commands": {
         "build": ["composer install"],
-        "test": ["php artisan test", "vendor/bin/phpunit", "vendor/bin/pest"],
-        "lint": ["vendor/bin/phpstan analyse", "vendor/bin/pint"],
-        "format": ["vendor/bin/pint"]
+        "test": ["vendor/bin/phpunit"],
+        "lint": ["vendor/bin/phpstan analyse", "vendor/bin/php-cs-fixer fix --dry-run --diff"],
+        "format": ["vendor/bin/php-cs-fixer fix"]
       },
       "permissions": {
-        "allow": ["php artisan *", "composer *", "vendor/bin/*"],
+        "allow": ["bin/console *", "composer *", "vendor/bin/*"],
         "deny": []
       }
     },

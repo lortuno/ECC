@@ -11,7 +11,7 @@ metadata:
 Run a multi-persona session where PM, Architect, Developer, and QA each respond from their own perspective in a single turn.
 
 This is the **preset four-lens review** for collaborative design and planning. It is not
-adversarial challenge (`council`), and it is not a free-form team composer
+structured adversarial challenge (`santa-method`), and it is not a free-form team composer
 (`team-builder` selects arbitrary agents; `dev-team` always runs the same four roles).
 
 ## When to Activate
@@ -30,7 +30,6 @@ Use when:
 
 | Condition | Use Instead |
 | --- | --- |
-| Ambiguous go/no-go decision with real tradeoffs | `council` |
 | You want to hand-pick which agents participate | `team-builder` |
 | Single-role deep-dive (e.g. architecture only) | the `architect` agent |
 | Code review | the `code-reviewer` agent or `/code-review` |
@@ -161,7 +160,7 @@ If the topic emerged from a long conversation, distill it to the one-paragraph p
 After presenting, offer:
 
 - "Go deeper with one role" — re-engage a single persona for more detail
-- "Resolve a tension" — use `council` if a specific tradeoff needs a verdict
+- "Resolve a tension" — use `santa-method` if a specific output needs adversarial verification
 - "Plan the work" — use `/plan` for an implementation plan, or the `epic-*` commands
   (`/epic-decompose`) for issue-backed breakdown
 
@@ -180,24 +179,24 @@ Do not write session output to files by default. If the user explicitly asks to 
 - Skipping the synthesis — the value is in the cross-role patterns, not just four separate answers
 - Running sequentially instead of in parallel — all four must run at the same time
 
-## Relationship to council and team-builder
+## Relationship to team-builder and santa-method
 
 The three team surfaces are complementary, not competing:
 
-| | dev-team | team-builder | council |
+| | dev-team | team-builder | santa-method |
 | --- | --- | --- | --- |
-| Purpose | Preset four-lens design review | Compose an arbitrary agent team | Adversarial decision |
-| Roles | Always PM / Arch / Dev / QA | User-selected agents | Fixed skeptical panel |
-| Trigger | Feature proposal, planning | Custom parallel dispatch | Go/no-go, tradeoff choice |
+| Purpose | Preset four-lens design review | Compose an arbitrary agent team | Adversarial verification before shipping |
+| Roles | Always PM / Arch / Dev / QA | User-selected agents | Two independent skeptical reviewers |
+| Trigger | Feature proposal, planning | Custom parallel dispatch | Output must clear review before it ships |
 | Tone | Constructive, role-aware | Depends on selection | Skeptical, challenging |
-| Output | Multi-role perspectives + synthesis | Per-agent results | Verdict with dissent |
+| Output | Multi-role perspectives + synthesis | Per-agent results | Pass/fail convergence verdict |
 
-Run `dev-team` to shape a proposal, then `council` if a specific decision within it needs adversarial pressure.
+Run `dev-team` to shape a proposal, then `santa-method` if the resulting output needs adversarial verification before it ships.
 
 ## Related Skills
 
-- `council` — adversarial decision-making under ambiguity
+- `santa-method` — adversarial verification under a convergence loop
 - `team-builder` — pick-your-own agent team when the preset four roles don't fit
 - `architect` (agent) — deep single-role architecture design
-- `/plan-prd` (command) — product requirements document before the team session
+- `/prp-prd` (command) — product requirements document before the team session
 - `/epic-decompose` (command) — break the outcome into issue-backed work

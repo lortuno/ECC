@@ -1,6 +1,6 @@
 # Everything Claude Code (ECC) — Agent Instructions
 
-This is a **production-ready AI coding plugin** providing 68 specialized agents, 292 skills, 94 commands, and automated hook workflows for software development.
+This is a **production-ready AI coding plugin** providing 32 specialized agents, 116 skills, 68 commands, and automated hook workflows for software development.
 
 **Version:** 2.2.2
 
@@ -18,36 +18,36 @@ This is a **production-ready AI coding plugin** providing 68 specialized agents,
 |-------|---------|-------------|
 | planner | Implementation planning | Complex features, refactoring |
 | architect | System design and scalability | Architectural decisions |
+| code-architect | Feature architecture blueprints | Designing a feature from existing codebase conventions |
+| code-explorer | Codebase tracing and mapping | Understanding execution paths before new development |
 | tdd-guide | Test-driven development | New features, bug fixes |
 | code-reviewer | Code quality and maintainability | After writing/modifying code |
-| security-reviewer | Vulnerability detection | Before commits, sensitive code |
-| spec-miner | Brownfield spec extraction | Onboarding brownfield projects to spec-driven development |
-| build-error-resolver | Fix build/type errors | When build fails |
-| e2e-runner | End-to-end Playwright testing | Critical user flows |
-| refactor-cleaner | Dead code cleanup | Code maintenance |
-| doc-updater | Documentation and codemaps | Updating docs |
-| cpp-reviewer | C/C++ code review | C and C++ projects |
-| cpp-build-resolver | C/C++ build errors | C and C++ build failures |
-| fsharp-reviewer | F# functional code review | F# projects |
-| docs-lookup | Documentation lookup via Context7 | API/docs questions |
-| go-reviewer | Go code review | Go projects |
-| go-build-resolver | Go build errors | Go build failures |
-| kotlin-reviewer | Kotlin code review | Kotlin/Android/KMP projects |
-| kotlin-build-resolver | Kotlin/Gradle build errors | Kotlin build failures |
-| database-reviewer | PostgreSQL/Supabase specialist | Schema design, query optimization |
-| python-reviewer | Python code review | Python projects |
-| django-reviewer | Django code review | Django apps, DRF APIs, ORM, migrations |
-| django-build-resolver | Django build, migration, and setup errors | Django startup, dependency, migration, collectstatic failures |
-| java-reviewer | Java and Spring Boot code review | Java/Spring Boot projects |
-| java-build-resolver | Java/Maven/Gradle build errors | Java build failures |
-| loop-operator | Autonomous loop execution | Run loops safely, monitor stalls, intervene |
-| harness-optimizer | Harness config tuning | Reliability, cost, throughput |
-| rust-reviewer | Rust code review | Rust projects |
-| rust-build-resolver | Rust build errors | Rust build failures |
-| pytorch-build-resolver | PyTorch runtime/CUDA/training errors | PyTorch build/training failures |
-| mle-reviewer | Production ML pipeline review | ML pipelines, evals, serving, monitoring, rollback |
-| rag-pipeline-reviewer | RAG pipeline review | Retrieval quality, chunking, reranking, RAGAS evaluation coverage |
+| code-simplifier | Clarity/consistency refactoring | Simplifying recently modified code without changing behavior |
 | typescript-reviewer | TypeScript/JavaScript code review | TypeScript/JavaScript projects |
+| react-reviewer | React/JSX code review | Hook correctness, render perf, server/client boundaries, a11y |
+| react-build-resolver | React build errors | Vite/webpack/Next.js/CRA/Parcel/esbuild/Bun build failures |
+| php-reviewer | PHP code review | PSR-12, type system, Doctrine ORM, security, performance |
+| database-reviewer | MySQL specialist | Query optimization, schema design, security, performance |
+| security-reviewer | Vulnerability detection | Before commits, sensitive code |
+| a11y-architect | Accessibility (WCAG 2.2) | Design systems, UI components, inclusive UX audits |
+| seo-specialist | SEO audits and remediation | Technical SEO, structured data, Core Web Vitals |
+| network-architect | Enterprise network design | Multi-site/enterprise network architecture |
+| network-config-reviewer | Network config review | Router/switch config security and correctness |
+| network-troubleshooter | Network diagnostics | Connectivity, routing, DNS, interface issues |
+| performance-optimizer | Performance analysis | Bottlenecks, bundle size, runtime, memory leaks |
+| build-error-resolver | Fix build/type errors | When build fails |
+| refactor-cleaner | Dead code cleanup | Code maintenance |
+| silent-failure-hunter | Silent failure detection | Swallowed errors, bad fallbacks, missing propagation |
+| type-design-analyzer | Type design review | Encapsulation, invariants, enforcement |
+| comment-analyzer | Comment quality review | Accuracy, completeness, comment-rot risk |
+| pr-test-analyzer | PR test coverage review | Behavioral coverage, real bug prevention |
+| doc-updater | Documentation and codemaps | Updating docs |
+| docs-lookup | Documentation lookup via Context7 | API/docs questions |
+| spec-miner | Brownfield spec extraction | Onboarding brownfield projects to spec-driven development |
+| conversation-analyzer | Hook candidate discovery | Finding behaviors worth preventing via hooks (`/hookify`) |
+| agent-evaluator | Agent output quality scoring | 5-axis rubric after non-trivial tasks |
+| harness-optimizer | Harness config tuning | Reliability, cost, throughput |
+| loop-operator | Autonomous loop execution | Run loops safely, monitor stalls, intervene |
 
 ## Agent Orchestration
 
@@ -60,7 +60,6 @@ Use agents proactively without user prompt:
 - Brownfield project onboarding → **ecc:spec-miner**
 - Autonomous loops / loop monitoring → **ecc:loop-operator**
 - Harness config reliability and cost → **ecc:harness-optimizer**
-- RAG/retrieval pipeline changes → **ecc:rag-pipeline-reviewer**
 
 Use parallel execution for independent operations — launch multiple agents simultaneously.
 
@@ -153,9 +152,9 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
 ## Project Structure
 
 ```
-agents/          — 68 specialized subagents
-skills/          — 292 workflow skills and domain knowledge
-commands/        — 94 slash commands
+agents/          — 32 specialized subagents
+skills/          — 116 workflow skills and domain knowledge
+commands/        — 68 slash commands
 hooks/           — Trigger-based automations
 rules/           — Always-follow guidelines (common + per-language)
 scripts/         — Cross-platform Node.js utilities

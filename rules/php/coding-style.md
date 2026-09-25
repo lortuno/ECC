@@ -21,7 +21,7 @@ paths:
 
 ## Formatting
 
-- Use **PHP-CS-Fixer** or **Laravel Pint** for formatting.
+- Use **PHP-CS-Fixer** for formatting.
 - Use **PHPStan** or **Psalm** for static analysis.
 - Keep Composer scripts checked in so the same commands run locally and in CI.
 

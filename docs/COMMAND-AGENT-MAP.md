@@ -5,47 +5,70 @@ This document lists each slash command and the primary agent(s) or skills it inv
 | Command | Primary agent(s) | Notes |
 |---------|------------------|--------|
 | `/plan` | planner | Implementation planning before code |
-| `/plan-canvas` | — (skill: plan-canvas) | Browser review canvas for plan artifacts: annotate, chat, approve/request changes |
-| `/tdd` | tdd-guide | Test-driven development |
+| `/feature-dev` | architect, planner | Guided feature development with codebase understanding |
 | `/code-review` | code-reviewer | Quality and security review |
+| `/review-pr` | code-reviewer, security-reviewer, pr-test-analyzer | Comprehensive PR review using specialized agents |
 | `/build-fix` | build-error-resolver | Fix build/type errors |
-| `/e2e` | e2e-runner | Playwright E2E tests |
+| `/react-build` | react-build-resolver | Fix React build failures |
+| `/react-review` | react-reviewer, typescript-reviewer | React/JSX review (TS reviewer runs alongside on TSX/JSX) |
+| `/react-test` | tdd-guide | React TDD workflow |
 | `/refactor-clean` | refactor-cleaner | Dead code removal |
 | `/update-docs` | doc-updater | Documentation sync |
 | `/update-codemaps` | doc-updater | Codemaps / architecture docs |
-| `/go-review` | go-reviewer | Go code review |
-| `/go-test` | tdd-guide | Go TDD workflow |
-| `/go-build` | go-build-resolver | Fix Go build errors |
-| `/python-review` | python-reviewer | Python code review |
-| `/harness-audit` | — | Harness scorecard (no single agent) |
+| `/test-coverage` | pr-test-analyzer | Coverage gap analysis and test generation |
+| `/harness-audit` | harness-optimizer | Harness scorecard |
 | `/loop-start` | loop-operator | Start autonomous loop |
 | `/loop-status` | loop-operator | Inspect loop status |
 | `/quality-gate` | — | Quality pipeline (hook-like) |
 | `/model-route` | — | Model recommendation (no agent) |
-| `/orchestrate` | planner, tdd-guide, code-reviewer, security-reviewer, architect | Multi-agent handoff |
-| `/multi-plan` | architect (Codex/Gemini prompts) | Multi-model planning |
-| `/multi-execute` | architect / frontend prompts | Multi-model execution |
-| `/multi-backend` | architect | Backend multi-service |
-| `/multi-frontend` | architect | Frontend multi-service |
-| `/multi-workflow` | architect | General multi-service |
-| `/learn` | — | continuous-learning skill, instincts |
+| `/orch-add-feature` | planner, tdd-guide, code-reviewer | Gated Research-Plan-TDD-Review-Commit pipeline |
+| `/orch-build-mvp` | planner, tdd-guide, code-reviewer | MVP scaffold from a design/spec doc |
+| `/orch-change-feature` | tdd-guide, code-reviewer | Update tests + implementation to new spec |
+| `/orch-fix-defect` | tdd-guide, code-reviewer | Reproduce as failing test, fix to green |
+| `/orch-refine-code` | code-reviewer | Behavior-preserving refactor |
+| `/orch-review` | code-reviewer, security-reviewer | Diff/PR review workflow surface |
+| `/multi-plan` | architect | Multi-model planning |
+| `/multi-execute` | architect | Multi-model execution |
+| `/multi-backend` | architect | Backend multi-model workflow |
+| `/multi-frontend` | architect | Frontend multi-model workflow |
+| `/multi-workflow` | architect | Full multi-model development workflow |
+| `/prp-prd` | — | Interactive PRD generator |
+| `/prp-plan` | architect, planner | Implementation plan with pattern extraction |
+| `/prp-implement` | tdd-guide | Execute plan with validation loops |
+| `/prp-commit` | — | Natural-language commit targeting |
+| `/prp-pr` | — | Alias of `/pr` |
+| `/pr` | — | Create a GitHub PR from unpushed commits |
+| `/epic-claim` | — | Epic coordination (GitHub-native) |
+| `/epic-decompose` | — | Epic coordination (GitHub-native) |
+| `/epic-publish` | — | Epic coordination (GitHub-native) |
+| `/epic-review` | — | Epic coordination (GitHub-native) |
+| `/epic-sync` | — | Epic coordination (GitHub-native) |
+| `/epic-unblock` | — | Epic coordination (GitHub-native) |
+| `/epic-validate` | — | Epic coordination (GitHub-native) |
+| `/learn` | — | continuous-learning-v2 skill, instincts |
 | `/learn-eval` | — | continuous-learning-v2, evaluate then save |
 | `/instinct-status` | — | continuous-learning-v2 |
 | `/instinct-import` | — | continuous-learning-v2 |
 | `/instinct-export` | — | continuous-learning-v2 |
 | `/evolve` | — | continuous-learning-v2, cluster instincts |
 | `/promote` | — | continuous-learning-v2 |
+| `/prune` | — | continuous-learning-v2 |
 | `/projects` | — | continuous-learning-v2 |
+| `/project-init` | — | Stack detection, dry-run onboarding plan |
 | `/skill-create` | — | skill-create-output script, git history |
+| `/skill-health` | — | Skill portfolio health dashboard |
 | `/checkpoint` | — | verification-loop skill |
-| `/verify` | — | verification-loop skill |
-| `/eval` | — | eval-harness skill |
-| `/test-coverage` | — | Coverage analysis |
+| `/ecc-guide` | — | ecc-guide skill |
+| `/cost-report` | — | ECC cost-tracker metrics log |
+| `/auto-update` | — | Pull latest ECC changes, reinstall managed targets |
+| `/test-coverage` | pr-test-analyzer | Coverage gap analysis |
 | `/sessions` | — | Session history |
+| `/save-session` / `/resume-session` | — | Session state persistence |
 | `/setup-pm` | — | Package manager setup script |
-| `/claw` | — | NanoClaw CLI (scripts/claw.js) |
-| `/pm2` | — | PM2 service lifecycle |
-| `/security-scan` | security-reviewer (skill) | AgentShield via security-scan skill |
+| `/jira` | — | jira-integration skill (MCP or REST) |
+| `/aside` | — | Quick side question without losing task context |
+| `/hookify` / `/hookify-configure` / `/hookify-list` / `/hookify-help` | conversation-analyzer | Hook creation from conversation analysis |
+| `/security-scan` | security-reviewer | AgentShield via security-scan skill |
 
 ## Non-Slash CLI Surfaces
 
@@ -63,19 +86,24 @@ This document lists each slash command and the primary agent(s) or skills it inv
 
 | Direct agent | Purpose | Scope | Notes |
 |--------------|---------|-------|-------|
-| `typescript-reviewer` | TypeScript/JavaScript code review | TypeScript/JavaScript projects | Invoke the agent directly when a review needs TS/JS-specific findings and there is no dedicated slash command yet. |
+| `typescript-reviewer` | TypeScript/JavaScript code review | TypeScript/JavaScript projects | Invoke directly when a review needs TS/JS-specific findings and there is no dedicated slash command. |
+| `php-reviewer` | PHP code review | PHP projects | PSR-12, type system, Doctrine ORM, security, performance. |
+| `database-reviewer` | MySQL specialist | Schema/query/security/performance review | Invoke directly for SQL, migrations, or schema design. |
+| `network-architect` / `network-config-reviewer` / `network-troubleshooter` | Network design, review, diagnostics | No dedicated slash command yet |
+| `a11y-architect` / `seo-specialist` | Accessibility / SEO | No dedicated slash command yet |
 
 ## Skills referenced by commands
 
-- **continuous-learning**, **continuous-learning-v2**: `/learn`, `/learn-eval`, `/instinct-*`, `/evolve`, `/promote`, `/projects`
-- **verification-loop**: `/checkpoint`, `/verify`
-- **eval-harness**: `/eval`
+- **continuous-learning-v2**: `/learn`, `/learn-eval`, `/instinct-*`, `/evolve`, `/promote`, `/prune`, `/projects`
+- **verification-loop**: `/checkpoint`
+- **eval-harness**: referenced by the `orch-*` gated pipeline
 - **security-scan**: `/security-scan` (runs AgentShield)
 - **strategic-compact**: suggested at compaction points (hooks)
 - **unified-memory**: `ecc memory ...` and the opt-in `ecc-memory-mcp` server
+- **jira-integration**: `/jira`
 
 ## How to use this map
 
-- **Discoverability:** Find which command triggers which agent (e.g. “use `/code-review` for code-reviewer”).
+- **Discoverability:** Find which command triggers which agent (e.g. "use `/code-review` for code-reviewer").
 - **Refactoring:** When renaming or removing an agent, search this doc and the command files for references.
 - **CI/docs:** The catalog script (`node scripts/ci/catalog.js`) outputs agent/command/skill counts; this map complements it with command–agent relationships.

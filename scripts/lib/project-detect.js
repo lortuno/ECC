@@ -125,8 +125,7 @@ const FRAMEWORK_RULES = [
   { framework: 'spring', language: 'java', markers: [], packageKeys: ['spring-boot', 'org.springframework'] },
 
   // PHP frameworks
-  { framework: 'laravel', language: 'php', markers: ['artisan'], packageKeys: ['laravel/framework'] },
-  { framework: 'symfony', language: 'php', markers: ['symfony.lock'], packageKeys: ['symfony/framework-bundle'] },
+  { framework: 'symfony', language: 'php', markers: ['symfony.lock', 'bin/console'], packageKeys: ['symfony/framework-bundle'] },
 
   // Elixir frameworks
   { framework: 'phoenix', language: 'elixir', markers: [], packageKeys: ['phoenix'] }
@@ -424,7 +423,7 @@ function detectProjectType(projectDir) {
 
   // Determine if fullstack (both frontend and backend languages)
   const frontendSignals = ['react', 'vue', 'angular', 'svelte', 'nextjs', 'nuxt', 'astro', 'remix'];
-  const backendSignals = ['django', 'fastapi', 'flask', 'express', 'nestjs', 'rails', 'spring', 'laravel', 'phoenix', 'gin', 'echo', 'actix', 'axum'];
+  const backendSignals = ['django', 'fastapi', 'flask', 'express', 'nestjs', 'rails', 'spring', 'symfony', 'phoenix', 'gin', 'echo', 'actix', 'axum'];
   const hasFrontend = frameworks.some(f => frontendSignals.includes(f));
   const hasBackend = frameworks.some(f => backendSignals.includes(f));
 

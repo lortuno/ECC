@@ -354,14 +354,14 @@ function runTests() {
   // PHP detection
   console.log('\nPHP Detection:');
 
-  if (test('detects php and laravel', () => {
+  if (test('detects php and symfony', () => {
     const dir = createTempDir();
     try {
-      writeTestFile(dir, 'composer.json', '{"require":{"laravel/framework":"^10.0"}}');
-      writeTestFile(dir, 'artisan', '#!/usr/bin/env php');
+      writeTestFile(dir, 'composer.json', '{"require":{"symfony/framework-bundle":"^7.0"}}');
+      writeTestFile(dir, 'symfony.lock', '{}');
       const result = detectProjectType(dir);
       assert.ok(result.languages.includes('php'));
-      assert.ok(result.frameworks.includes('laravel'));
+      assert.ok(result.frameworks.includes('symfony'));
     } finally {
       cleanupDir(dir);
     }
