@@ -158,10 +158,10 @@ test('--sqlite builds a real, queryable database file', function () {
     assert.strictEqual(result.status, 0, result.stderr);
     assert.ok(fs.existsSync(dbPath));
 
-    const query = spawnSync('sqlite3', [dbPath, 'SELECT model, input_tokens FROM sessions WHERE session_id = "sess-1";'], { encoding: 'utf8' });
+    const query = spawnSync('sqlite3', [dbPath, "SELECT model, input_tokens FROM sessions WHERE session_id = 'sess-1';"], { encoding: 'utf8' });
     assert.strictEqual(query.stdout.trim(), 'claude-sonnet-5|100');
 
-    const taskQuery = spawnSync('sqlite3', [dbPath, 'SELECT task, estimated_minutes, estimated_duration_ms, estimate_note, estimate_delta_ms FROM sessions WHERE session_id = "sess-1";'], { encoding: 'utf8' });
+    const taskQuery = spawnSync('sqlite3', [dbPath, "SELECT task, estimated_minutes, estimated_duration_ms, estimate_note, estimate_delta_ms FROM sessions WHERE session_id = 'sess-1';"], { encoding: 'utf8' });
     assert.strictEqual(taskQuery.stdout.trim(), 'feature/session-reporting|4.0|240000|add task/estimate tracking|60000');
 
     const agentQuery = spawnSync('sqlite3', [dbPath, 'SELECT agent_name, run_count FROM agent_runs;'], { encoding: 'utf8' });

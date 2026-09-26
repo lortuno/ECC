@@ -135,6 +135,8 @@ Skill "installation" means different things depending on how ECC is loaded:
 
 Only curated skills are validated by `scripts/ci/validate-skills.js` and referenced in install manifests; learned/imported/evolved skills live outside the repo and are picked up at runtime if their directory exists — nothing needs to be "installed" for them either, beyond being present on disk.
 
+For the full step-by-step walkthrough of creating and installing a skill, agent, or hook — including worked examples, structural validators, and behavioral canary checks — see `docs/INSTALLATION_GUIDE.md`. Per-component authoring detail lives in `HOW_TO_CREATE_A_SKILL.md`, `HOW_TO_CREATE_AN_AGENT.md`, and `HOW_TO_CREATE_A_HOOK.md` at the repo root.
+
 ## Testing
 
 ```bash

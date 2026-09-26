@@ -92,8 +92,63 @@ exit 2
 - Until approved, structure prompts defensively: state up front that you own the code and the goal is remediation ("review this module I own for vulnerabilities and propose fixes"), keep scope to one module at a time, and avoid exploit-generation phrasing ("write a PoC", "craft a payload").
 - Prefer remediation-oriented skills (`security-review`, `security-scan`) over offensive framing, and run static tooling (semgrep, bandit, `npm audit`) yourself, then ask the model to interpret results.
 
+## Installation Errors
+
+Errors encountered while installing or authoring a skill, agent, or hook in this repo — distinct from the upstream Claude Code CLI bugs above. Full context: [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md).
+
+### Skill/agent name conflicts
+
+**Symptoms:** A new skill or agent shares a name with an existing one, or its directory name and frontmatter `name:` don't match.
+
+**What helps:**
+
+- Directory name and frontmatter `name:` must match exactly — `node docs/examples/skill-authoring/validate-skill.js <dir>` and `node docs/examples/agent-authoring/validate-agent.js <file>` both flag a mismatch.
+- Before naming a new curated component, check `skills/` / `agents/` for an existing name collision (`ls skills/`, `ls agents/`).
+- For a project-local skill under `.claude/skills/`, a name collision with a curated skill of the same name is not itself an error, but is confusing — prefer a distinct name.
+
+### Hook execution order dependencies
+
+**Symptoms:** Hook B is supposed to run after hook A, but fires first (or vice versa) because array order in `hooks/hooks.json` doesn't match the intended dependency.
+
+**What helps:**
+
+- Execution order is array order within the same event — reorder the `hooks.json` entries directly.
+- When reordering, move the matching `hooks/hooks.metadata.json` sidecar entries **first**, then run `node scripts/ci/validate-hooks.js --update-fingerprints` to refresh fingerprints, then `node scripts/ci/validate-hooks.js` (no flag) to confirm alignment.
+- See [HOW_TO_CREATE_A_HOOK.md](../HOW_TO_CREATE_A_HOOK.md) §3 and `docs/examples/hook-authoring/validate-hook-example.js` for a standalone-project version of the same check.
+
+### Missing dependencies
+
+**Symptoms:** A hook script (or a skill's example code) requires an npm package or external CLI (e.g. `prettier`, `tsc`, `ruff`) that isn't installed, and fails silently or with a cryptic error.
+
+**What helps:**
+
+- Hook scripts in this repo use only Node's stdlib by default — if yours needs an npm package, wrap the call in a `try/catch` (see `hooks/README.md`'s "Auto-format Python files with ruff" recipe, which swallows the error if the external tool is missing) rather than letting it throw uncaught.
+- For a skill's example code in another language, run that language's own compile/lint check (`npx tsc --noEmit`, `python -m py_compile`, `go build`, `php -l`) before shipping the example, per `docs/SKILL-DEVELOPMENT-GUIDE.md`.
+
+### Claude/harness version incompatibility
+
+**Symptoms:** A component that uses a newer Claude Code feature (a hook event, a frontmatter field) silently never triggers on an older harness version, with no error.
+
+**What helps:**
+
+- Check the installed Claude Code version's changelog before relying on a very new feature.
+- Test the component's canary check (each `HOW_TO_CREATE_A_*.md`'s behavioral section) on the actual harness version your users will run, not just your own.
+- If a feature is genuinely unavailable, gate on it defensively rather than assuming it's present — for a hook, feature-detect using `ECC_HOOK_PROFILE`/`ECC_DISABLED_HOOKS` conventions rather than a hard dependency.
+
+### Partial installation failure / rollback
+
+**Symptoms:** Component files were written/updated, but registration failed partway through (e.g. `hooks.json` updated but the sidecar wasn't, or a manifest entry was added but the file it points to doesn't exist).
+
+**What helps:**
+
+- For an uncommitted partial edit: `git status` to see what changed, then `git checkout -- <files>` to discard just the broken files.
+- For a change already applied to an installed (non-repo) location: `ecc doctor` diagnoses drift between the manifest and installed files; `ecc repair` fixes it. See `README.md`'s "Skill and component installation" section for the full `ecc plan`/`install`/`setup`/`doctor`/`repair` lifecycle.
+- For a hook specifically: `node scripts/ci/validate-hooks.js` fails loudly on any `hooks.json`/`hooks.metadata.json` drift, so a partial hook registration cannot silently pass CI.
+
 ## Related ECC Docs
 
+- [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for the consolidated skill/agent/hook installation walkthrough.
+- [../HOW_TO_CREATE_A_SKILL.md](../HOW_TO_CREATE_A_SKILL.md), [../HOW_TO_CREATE_AN_AGENT.md](../HOW_TO_CREATE_AN_AGENT.md), [../HOW_TO_CREATE_A_HOOK.md](../HOW_TO_CREATE_A_HOOK.md) for full per-component authoring guides.
 - [hook-bug-workarounds.md](./hook-bug-workarounds.md) for the shorter hook/compaction/MCP recovery checklist.
 - [hooks/README.md](../hooks/README.md) for ECC's documented hook lifecycle and exit-code behavior.
 - [token-optimization.md](./token-optimization.md) for cost and context management settings.

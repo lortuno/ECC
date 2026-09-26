@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "PreToolUse": [
+      {
+        "id": "example:pre:bash:block-destructive-rm",
+        "description": "Illustrative only — blocks a Bash rm -rf on an absolute path",
+        "fingerprint": "a8c868b5f526"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "id": "example:post:edit-write:console-log-warning",
+        "description": "Illustrative only — warns (cannot block) when console.log is left in edited content",
+        "fingerprint": "ffc0b83c2801"
+      }
+    ]
+  }
+}
