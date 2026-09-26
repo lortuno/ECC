@@ -49,6 +49,7 @@ The project is organized into several core components:
 - `/build-fix` - Fix build errors
 - `/learn` - Extract patterns from sessions
 - `/skill-create` - Generate skills from git history
+- `/spec` - Create or update a feature's spec under `specs/`
 
 ## Development Notes
 
@@ -78,5 +79,10 @@ Use the following skills when working on related files:
 | `README.md` | `/readme` |
 | `.github/workflows/*.yml` | `/ci-workflow` |
 | `*.tsx`, `*.jsx`, `components/**` | `react-patterns`, `react-testing` — for React-specific work invoke `/react-review`, `/react-build`, `/react-test` |
+| `specs/**`, or any change to a feature's behavior | `spec-driven-development` — read the matching `specs/{feature}.md` before changing behavior, update it after; use `/spec` to create or update one |
 
 When spawning subagents, always pass conventions from the respective skill into the agent's prompt.
+
+## Spec-Driven Development
+
+Every feature lives in `specs/` as one Markdown file (`specs/{feature-name}.md`), the authoritative reference for what that feature does. Read the matching spec before changing a feature's behavior; update it in the same PR after. Answer "how does X work?" questions from `specs/` first, citing the file, before reading source. See the `spec-driven-development` skill for the template and full workflow, and `/spec` to create or update one.

@@ -17,7 +17,7 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const { run, resolveBranch } = require('../../scripts/hooks/session-rollup');
+const { run, resolveBranch, SQLITE_MIRROR_RELATIVE_PATH } = require('../../scripts/hooks/session-rollup');
 const { readSessionRows } = require('../../scripts/lib/session-rollup');
 const { recordEstimate } = require('../../scripts/lib/task-estimate');
 
@@ -192,6 +192,33 @@ test('run is idempotent across repeated Stop events for the same session', () =>
 
     const rows = readSessionRows({ homeDir });
     assert.strictEqual(rows.length, 1, 'repeated Stop events must upsert, not append duplicates');
+  });
+});
+
+test('run mirrors the sessions table into a gitignored SQLite file under the hook cwd', () => {
+  const probe = spawnSync('sqlite3', ['--version'], { encoding: 'utf8' });
+  if (probe.error) {
+    console.log('    (skipped: sqlite3 CLI not available in this environment)');
+    return;
+  }
+  withIsolatedHome(homeDir => {
+    const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'session-rollup-project-'));
+    try {
+      const costsPath = path.join(homeDir, '.claude', 'metrics', 'costs.jsonl');
+      writeJsonl(costsPath, [
+        { session_id: 'sess-1', timestamp: '2026-01-01T00:00:00.000Z', model: 'claude-sonnet-5', input_tokens: 10, output_tokens: 5, cache_write_tokens: 0, cache_read_tokens: 0, estimated_cost_usd: 0.001 },
+      ]);
+
+      run(JSON.stringify({ session_id: 'sess-1', cwd: projectDir }));
+
+      const dbPath = path.join(projectDir, SQLITE_MIRROR_RELATIVE_PATH);
+      assert.ok(fs.existsSync(dbPath), 'expected the SQLite mirror to be created under the project cwd');
+
+      const query = spawnSync('sqlite3', [dbPath, 'SELECT session_id, model FROM sessions;'], { encoding: 'utf8' });
+      assert.strictEqual(query.stdout.trim(), 'sess-1|claude-sonnet-5');
+    } finally {
+      fs.rmSync(projectDir, { recursive: true, force: true });
+    }
   });
 });
 

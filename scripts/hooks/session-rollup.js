@@ -10,10 +10,18 @@
  * settings.local.json wiring) so this session's latest cost row already
  * exists when this hook reads it. Best-effort and non-blocking, matching
  * every other hook in this file's family.
+ *
+ * Also mirrors the full sessions table into a gitignored SQLite file at
+ * <project>/.claude/data/sessions.db, so `sessions.jsonl` (which lives
+ * outside any one project, under the user's home directory) has a
+ * queryable, per-project copy that survives closing/reopening the project.
+ * Skipped silently when the `sqlite3` CLI is not on PATH.
  */
 
+const path = require('path');
+const { spawnSync } = require('child_process');
 const { sanitizeSessionId } = require('../lib/session-bridge');
-const { getClaudeDir, runCommand } = require('../lib/utils');
+const { getClaudeDir, runCommand, ensureDir } = require('../lib/utils');
 const { getRunsFilePath: getSkillRunsFilePath } = require('../lib/skill-evolution/tracker');
 const { getRunsFilePath: getAgentRunsFilePath } = require('../lib/agent-tracker');
 const { getEstimatesFilePath } = require('../lib/task-estimate');
@@ -21,7 +29,27 @@ const {
   getSessionsFilePath,
   computeSessionRow,
   upsertSessionRow,
+  readSessionRows,
 } = require('../lib/session-rollup');
+const { buildSql } = require('../sessions-report');
+
+const SQLITE_MIRROR_RELATIVE_PATH = path.join('.claude', 'data', 'sessions.db');
+
+// Rebuilds the project-local SQLite mirror from the full sessions table.
+// Best-effort: silently does nothing if the sqlite3 CLI isn't available.
+function refreshSqliteMirror(cwd) {
+  try {
+    const probe = spawnSync('sqlite3', ['--version'], { encoding: 'utf8' });
+    if (probe.error || probe.status !== 0) {
+      return;
+    }
+    const dbPath = path.join(cwd || process.cwd(), SQLITE_MIRROR_RELATIVE_PATH);
+    ensureDir(path.dirname(dbPath));
+    spawnSync('sqlite3', [dbPath], { input: buildSql(readSessionRows()), encoding: 'utf8' });
+  } catch {
+    // Best-effort mirror; never block the Stop hook chain on it.
+  }
+}
 
 // Best-effort branch lookup, recorded on the row as `task` — the unit of
 // work the session belongs to. Resolved from the hook's own `cwd` (Windows
@@ -56,6 +84,7 @@ function run(rawInput) {
 
     if (row) {
       upsertSessionRow(getSessionsFilePath(), row);
+      refreshSqliteMirror(input.cwd);
     }
   } catch {
     // Best-effort; never block the Stop hook chain on a rollup failure.
@@ -83,4 +112,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { run, resolveBranch };
+module.exports = { run, resolveBranch, refreshSqliteMirror, SQLITE_MIRROR_RELATIVE_PATH };
