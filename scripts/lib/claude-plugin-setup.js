@@ -149,7 +149,7 @@ function buildWindowsCommandLine(command, args) {
   return [command, ...args].map(quoteWindowsCommandToken).join(' ');
 }
 
-function resolveWindowsCmdShim(command, env) {
+function locateWindowsExecutable(command, env) {
   if (typeof command !== 'string' || command.length === 0) return null;
   if (/\.(cmd|bat)$/i.test(command)) return command;
   if (path.extname(command)) return null;
@@ -162,7 +162,14 @@ function resolveWindowsCmdShim(command, env) {
     return fs.existsSync(candidate) ? candidate : null;
   }
 
-  const lookup = spawnSync('where.exe', [`${command}.cmd`], {
+  // A bare spawnSync/CreateProcess lookup (shell: false) only auto-resolves
+  // `.exe`/`.com` and, unlike a real shell, does not check every PATHEXT
+  // extension per PATH directory before moving to the next one. That lets it
+  // walk straight past a directory holding only a `claude.cmd` shim and pick
+  // up an unrelated `claude.exe` further down PATH instead. `where.exe`
+  // performs the same per-directory PATHEXT search a real shell would, so
+  // resolve through it first and honor whatever it finds first.
+  const lookup = spawnSync('where.exe', [command], {
     env,
     encoding: 'utf8',
     windowsHide: true,
@@ -222,14 +229,13 @@ function runClaude(args, options = {}, dependencies = {}) {
     timeout: timeoutMs,
     windowsHide: true,
   };
-  let result = spawn(command, args, spawnOptions);
-
-  if (process.platform === 'win32' && result.error) {
-    const shim = resolveWindowsCmdShim(command, spawnOptions.env);
-    if (shim) {
+  let result;
+  if (process.platform === 'win32') {
+    const resolved = locateWindowsExecutable(command, spawnOptions.env);
+    if (resolved && /\.(cmd|bat)$/i.test(resolved)) {
       let commandLine;
       try {
-        commandLine = buildWindowsCommandLine(shim, args);
+        commandLine = buildWindowsCommandLine(resolved, args);
       } catch (error) {
         fail(
           'CLAUDE_COMMAND_FAILED',
@@ -241,7 +247,11 @@ function runClaude(args, options = {}, dependencies = {}) {
         ...spawnOptions,
         shell: true,
       });
+    } else {
+      result = spawn(resolved || command, args, spawnOptions);
     }
+  } else {
+    result = spawn(command, args, spawnOptions);
   }
 
   const timedOut = (

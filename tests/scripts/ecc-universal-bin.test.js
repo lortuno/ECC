@@ -79,6 +79,10 @@ function getSpawnInvocation(command, args, platform = process.platform) {
   };
 }
 
+function toPosixPath(value) {
+  return String(value).replace(/\\/g, '/');
+}
+
 function withPathPrefix(environment, prefix) {
   const nextEnvironment = { ...environment };
   const pathKey = Object.keys(nextEnvironment)
@@ -170,7 +174,15 @@ function prepareLocalPackedProject(packageManager) {
     });
   }
   fs.mkdirSync(modulesDirectory, { recursive: true });
-  run('tar', ['-xzf', fixture.archivePath, '-C', modulesDirectory], {
+  // GNU tar (as shipped with Git for Windows) treats a bare drive letter before
+  // ":" as a remote host spec ("Cannot connect to C:") unless told otherwise, and
+  // still mishandles a backslash-separated -C target even with that flag. Forward
+  // slashes plus --force-local keep extraction local to this machine on Windows;
+  // POSIX tar builds neither need nor support --force-local.
+  const tarArgs = process.platform === 'win32'
+    ? ['--force-local', '-xzf', toPosixPath(fixture.archivePath), '-C', toPosixPath(modulesDirectory)]
+    : ['-xzf', fixture.archivePath, '-C', modulesDirectory];
+  run('tar', tarArgs, {
     cwd: projectDirectory,
     timeout: archiveExtractionTimeoutMs,
   });
