@@ -10,6 +10,30 @@ const library = path.resolve(__dirname, '../../../scripts/lib/eval-harness');
 const refused = error => error.code === 'gate.isolation_required';
 const invalidVariant = error => error.code === 'gate.variant_invalid';
 
+// Creating a file symlink on Windows requires Developer Mode or admin
+// privileges (SeCreateSymbolicLinkPrivilege); without it fs.symlinkSync
+// throws EPERM before the fixture can even be built. Detect that once so
+// the affected test can skip fixture setup rather than fail on a platform
+// limitation unrelated to the digest/symlink-detection logic under test.
+let symlinkFixturesSupported;
+function symlinkFixturesAvailable() {
+  if (symlinkFixturesSupported === undefined) {
+    const probe = tempDir('symlink-probe');
+    try {
+      const target = path.join(probe, 'target');
+      fs.writeFileSync(target, '');
+      fs.symlinkSync(target, path.join(probe, 'link'));
+      symlinkFixturesSupported = true;
+    } catch (error) {
+      if (error.code !== 'EPERM' && error.code !== 'EACCES') throw error;
+      symlinkFixturesSupported = false;
+    } finally {
+      cleanup(probe);
+    }
+  }
+  return symlinkFixturesSupported;
+}
+
 function setup(fn) {
   const root = tempDir('security');
   try {
@@ -105,17 +129,23 @@ test('unsafe names and escaping or undigested entry paths are rejected', () => s
   }
 }));
 
-test('symlink manifests and symlink trees cannot hide from digest', () => setup(c => {
-  const file = path.join(c.variant, 'variant.json');
-  const outside = path.join(c.root, 'manifest.json');
-  fs.renameSync(file, outside);
-  fs.symlinkSync(outside, file);
-  assert.throws(() => gate.loadVariant(c.variant), invalidVariant);
-  fs.unlinkSync(file);
-  fs.renameSync(outside, file);
-  fs.symlinkSync(c.root, path.join(c.variant, 'link'));
-  assert.throws(() => gate.loadVariant(c.variant), invalidVariant);
-}));
+test('symlink manifests and symlink trees cannot hide from digest', () => {
+  if (!symlinkFixturesAvailable()) {
+    console.log('    Skipped: platform cannot create symlinks without elevated privileges (Windows Developer Mode/admin)');
+    return;
+  }
+  setup(c => {
+    const file = path.join(c.variant, 'variant.json');
+    const outside = path.join(c.root, 'manifest.json');
+    fs.renameSync(file, outside);
+    fs.symlinkSync(outside, file);
+    assert.throws(() => gate.loadVariant(c.variant), invalidVariant);
+    fs.unlinkSync(file);
+    fs.renameSync(outside, file);
+    fs.symlinkSync(c.root, path.join(c.variant, 'link'));
+    assert.throws(() => gate.loadVariant(c.variant), invalidVariant);
+  });
+});
 
 test('valid nested entry is in digest; missing and excluded entries fail closed', () => setup(c => {
   fs.mkdirSync(path.join(c.variant, 'nested'));

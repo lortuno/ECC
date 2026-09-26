@@ -636,7 +636,13 @@ function runTests() {
       }
 
       const originalHome = process.env.HOME;
+      const originalUserProfile = process.env.USERPROFILE;
+      // findPluginInstall also consults USERPROFILE/os.homedir(), which on Windows
+      // resolve to the real developer home regardless of HOME. Without overriding
+      // USERPROFILE too, this test's fixture-only manifest lookup falls through to
+      // the real machine's own installed_plugins.json and leaks host state in.
       process.env.HOME = homeDir;
+      process.env.USERPROFILE = homeDir;
       try {
         const found = findPluginInstall(projectRoot);
         assert.ok(found);
@@ -646,6 +652,11 @@ function runTests() {
           delete process.env.HOME;
         } else {
           process.env.HOME = originalHome;
+        }
+        if (originalUserProfile === undefined) {
+          delete process.env.USERPROFILE;
+        } else {
+          process.env.USERPROFILE = originalUserProfile;
         }
       }
     } finally {

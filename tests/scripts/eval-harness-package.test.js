@@ -61,7 +61,10 @@ try {
     assert.ok(archive, 'packing must succeed before extracting');
     const extract = path.join(work, 'extracted');
     fs.mkdirSync(extract);
-    const unpack = command('tar', ['-xzf', archive, '-C', extract]);
+    // GNU tar (MSYS/Git Bash, used on Windows here) misreads a Windows drive-letter
+    // path like C:\... as a remote "host:path" spec unless forced local.
+    const tarArgs = process.platform === 'win32' ? ['--force-local'] : [];
+    const unpack = command('tar', [...tarArgs, '-xzf', archive, '-C', extract]);
     assert.strictEqual(unpack.status, 0, unpack.error?.message || unpack.stderr);
     const installed = path.join(extract, 'package');
     assert.ok(!fs.existsSync(path.join(installed, 'node_modules')));

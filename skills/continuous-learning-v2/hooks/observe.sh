@@ -39,6 +39,30 @@ if [ -z "$INPUT_JSON" ]; then
   exit 0
 fi
 
+# Prevent observe.sh from firing on non-human sessions to avoid:
+#   - ECC observing its own Haiku observer sessions (self-loop)
+#   - ECC observing other tools' automated sessions
+#   - automated sessions creating project-scoped homunculus metadata
+#
+# Layers 1-3 are checked before python resolution below: they are plain
+# string/env comparisons, so a denied or suppressed entrypoint must exit
+# without ever depending on a python interpreter being resolvable (#2102).
+
+# Layer 1: entrypoint. Only interactive terminal sessions should continue.
+# sdk-ts: Agent SDK sessions can be human-interactive (e.g. via Happy).
+# Non-interactive SDK automation is still filtered by Layers 2-5 below
+# (ECC_HOOK_PROFILE=minimal, ECC_SKIP_OBSERVE=1, agent_id, path exclusions).
+case "${CLAUDE_CODE_ENTRYPOINT:-cli}" in
+  cli|sdk-ts|sdk-cli|claude-desktop|claude-vscode) ;;
+  *) exit 0 ;;
+esac
+
+# Layer 2: minimal hook profile suppresses non-essential hooks.
+[ "${ECC_HOOK_PROFILE:-standard}" = "minimal" ] && exit 0
+
+# Layer 3: cooperative skip env var for automated sessions.
+[ "${ECC_SKIP_OBSERVE:-0}" = "1" ] && exit 0
+
 _is_windows_app_installer_stub() {
   # Windows 10/11 ships an "App Execution Alias" stub at
   #   %LOCALAPPDATA%\Microsoft\WindowsApps\python.exe
@@ -144,26 +168,6 @@ fi
 if [ -n "${CLV2_CONFIG:-}" ] && [ -f "$(dirname "$CLV2_CONFIG")/disabled" ]; then
   exit 0
 fi
-
-# Prevent observe.sh from firing on non-human sessions to avoid:
-#   - ECC observing its own Haiku observer sessions (self-loop)
-#   - ECC observing other tools' automated sessions
-#   - automated sessions creating project-scoped homunculus metadata
-
-# Layer 1: entrypoint. Only interactive terminal sessions should continue.
-# sdk-ts: Agent SDK sessions can be human-interactive (e.g. via Happy).
-# Non-interactive SDK automation is still filtered by Layers 2-5 below
-# (ECC_HOOK_PROFILE=minimal, ECC_SKIP_OBSERVE=1, agent_id, path exclusions).
-case "${CLAUDE_CODE_ENTRYPOINT:-cli}" in
-  cli|sdk-ts|sdk-cli|claude-desktop|claude-vscode) ;;
-  *) exit 0 ;;
-esac
-
-# Layer 2: minimal hook profile suppresses non-essential hooks.
-[ "${ECC_HOOK_PROFILE:-standard}" = "minimal" ] && exit 0
-
-# Layer 3: cooperative skip env var for automated sessions.
-[ "${ECC_SKIP_OBSERVE:-0}" = "1" ] && exit 0
 
 # Layer 4: subagent sessions are automated by definition.
 _ECC_AGENT_ID=$(echo "$INPUT_JSON" | "$PYTHON_CMD" -c "import json,sys; print(json.load(sys.stdin).get('agent_id',''))" 2>/dev/null || true)

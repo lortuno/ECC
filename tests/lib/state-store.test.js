@@ -38,6 +38,31 @@ function cleanupTempDir(dirPath) {
   fs.rmSync(dirPath, { recursive: true, force: true });
 }
 
+// Creating a *file* symlink on Windows requires Developer Mode or admin
+// privileges (SeCreateSymbolicLinkPrivilege) — junctions (used elsewhere in
+// this file for directories) don't need it, but there is no junction
+// equivalent for files. Detect that once so the affected test can skip
+// fixture setup rather than fail on a platform limitation unrelated to the
+// state-store's symlink-refusal logic under test.
+let symlinkFixturesSupported;
+function symlinkFixturesAvailable() {
+  if (symlinkFixturesSupported === undefined) {
+    const probe = createTempDir('ecc-state-symlink-probe-');
+    try {
+      const target = path.join(probe, 'target');
+      fs.writeFileSync(target, '');
+      fs.symlinkSync(target, path.join(probe, 'link'));
+      symlinkFixturesSupported = true;
+    } catch (error) {
+      if (error.code !== 'EPERM' && error.code !== 'EACCES') throw error;
+      symlinkFixturesSupported = false;
+    } finally {
+      cleanupTempDir(probe);
+    }
+  }
+  return symlinkFixturesSupported;
+}
+
 function runNode(scriptPath, args = [], options = {}) {
   return spawnSync('node', [scriptPath, ...args], {
     encoding: 'utf8',
@@ -383,6 +408,10 @@ async function runTests() {
   })) passed += 1; else failed += 1;
 
   if (await test('refuses a final state database symlink without changing its target', async () => {
+    if (!symlinkFixturesAvailable()) {
+      console.log('    Skipped: platform cannot create symlinks without elevated privileges (Windows Developer Mode/admin)');
+      return;
+    }
     const testDir = createTempDir('ecc-state-final-link-');
     const targetPath = path.join(testDir, 'outside.db');
     const dbPath = path.join(testDir, 'state.db');

@@ -87,7 +87,14 @@ test('task file adapter reads structured status, labels mtime, skips symlinks an
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'coordination-test-'));
   try {
     fs.mkdirSync(path.join(dir, 'worker')); fs.writeFileSync(path.join(dir, 'worker', 'STATUS.md'), '- State: running\n- Updated: 2026-09-08T06:29:00Z\n');
-    fs.symlinkSync(path.join(dir, 'worker'), path.join(dir, 'linked'));
+    try {
+      fs.symlinkSync(path.join(dir, 'worker'), path.join(dir, 'linked'));
+    } catch (error) {
+      // Creating a symlink needs SeCreateSymbolicLinkPrivilege on Windows (admin or
+      // Developer Mode); without it this narrows to the non-symlink assertions below.
+      if (error.code !== 'EPERM') throw error;
+      console.log('    (skip-symlinks coverage limited: no symlink privilege on this platform)');
+    }
     const r = collectTaskFiles(dir); assert.equal(r.tasks.length, 1); assert.equal(r.tasks[0].status, 'running');
     assert.ok(r.tasks[0].statusFileModifiedAt); assert.equal(r.tasks[0].heartbeatAt, '2026-09-08T06:29:00Z');
     fs.writeFileSync(path.join(dir, 'large.json'), ' '.repeat(1024 * 1024 + 1));

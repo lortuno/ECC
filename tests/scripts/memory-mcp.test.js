@@ -30,6 +30,23 @@ async function test(name, fn) {
   }
 }
 
+// Creating a symlink needs SeCreateSymbolicLinkPrivilege on Windows (admin or
+// Developer Mode); a bare user account gets EPERM. Probe once so the
+// symlink-invocation test can be skipped instead of hard-failing in that
+// sandbox, mirroring the bash-availability guard in
+// tests/skills/repo-scan-install.test.js.
+function canCreateSymlinks() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-symlink-check-'));
+  try {
+    fs.symlinkSync(path.join(dir, 'target'), path.join(dir, 'link'));
+    return true;
+  } catch (error) {
+    return false;
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function createFixture(extraEnv = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-memory-mcp-'));
   try {
@@ -447,19 +464,23 @@ async function main() {
     });
   });
 
-  await test('starts when the npm bin invokes the server through a symlink', async () => {
-    const binRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-memory-bin-'));
-    const binPath = path.join(binRoot, 'ecc-memory-mcp');
-    fs.symlinkSync(SERVER, binPath);
-    try {
-      await withClient(async client => {
-        const tools = await client.listTools();
-        assert.strictEqual(tools.tools.length, 4);
-      }, { server: binPath });
-    } finally {
-      fs.rmSync(binRoot, { recursive: true, force: true });
-    }
-  });
+  if (canCreateSymlinks()) {
+    await test('starts when the npm bin invokes the server through a symlink', async () => {
+      const binRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-memory-bin-'));
+      const binPath = path.join(binRoot, 'ecc-memory-mcp');
+      fs.symlinkSync(SERVER, binPath);
+      try {
+        await withClient(async client => {
+          const tools = await client.listTools();
+          assert.strictEqual(tools.tools.length, 4);
+        }, { server: binPath });
+      } finally {
+        fs.rmSync(binRoot, { recursive: true, force: true });
+      }
+    });
+  } else {
+    console.log('  SKIP starts when the npm bin invokes the server through a symlink (no symlink privilege on this platform)');
+  }
 
   await test('rejects an oversized partial line and recovers at the next message boundary', async () => {
     const {

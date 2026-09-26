@@ -21,8 +21,22 @@ function test(name, fn) {
   }
 }
 
+// On Windows, "python"/"python3" are frequently Microsoft Store "App
+// Execution Alias" stubs (AppInstallerPythonRedirector.exe) rather than a
+// real interpreter when Python was not installed from the Store. Unlike a
+// missing command, spawning the stub does not fail with ENOENT: it runs and
+// exits nonzero (status 9009) with a "Microsoft Store" message on stderr. The
+// "py" launcher (installed by the official python.org installer) is a third,
+// independent candidate that is not shadowed by this stub.
+const candidates = process.platform === 'win32' ? ['python', 'python3', 'py'] : ['python3', 'python'];
+
+function isWindowsStoreStub(result) {
+  if (process.platform !== 'win32') return false;
+  const text = `${result.stderr || ''}${result.stdout || ''}`;
+  return result.status === 9009 || /microsoft store/i.test(text);
+}
+
 function runPython(source) {
-  const candidates = process.platform === 'win32' ? ['python', 'python3'] : ['python3', 'python'];
   let lastError = null;
 
   for (const command of candidates) {
@@ -33,6 +47,11 @@ function runPython(source) {
 
     if (result.error && result.error.code === 'ENOENT') {
       lastError = result.error;
+      continue;
+    }
+
+    if (isWindowsStoreStub(result)) {
+      lastError = new Error((result.stderr || result.stdout || '').trim() || `${command} exited ${result.status}`);
       continue;
     }
 

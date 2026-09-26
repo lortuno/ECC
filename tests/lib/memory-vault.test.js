@@ -40,6 +40,32 @@ function test(name, fn) {
   }
 }
 
+// Creating a symlink requires SeCreateSymbolicLinkPrivilege on Windows (admin or
+// Developer Mode); a bare user account gets EPERM. Probe once so symlink-dependent
+// tests can be skipped instead of hard-failing in that sandbox, mirroring the
+// bash-availability guard in tests/skills/repo-scan-install.test.js.
+function canCreateSymlinks() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-symlink-check-'));
+  try {
+    fs.symlinkSync(path.join(dir, 'target'), path.join(dir, 'link'));
+    return true;
+  } catch (error) {
+    return false;
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+const symlinksSupported = canCreateSymlinks();
+
+function testRequiringSymlinks(name, fn) {
+  if (!symlinksSupported) {
+    console.log(`  SKIP ${name} (no symlink privilege on this platform)`);
+    return;
+  }
+  test(name, fn);
+}
+
 function createFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-memory-vault-'));
   const projectRoot = path.join(root, 'project');
@@ -268,7 +294,7 @@ test('never overwrites a duplicate ID', () => {
   }
 });
 
-test('never follows a pre-existing destination symlink during create-only publication', () => {
+testRequiringSymlinks('never follows a pre-existing destination symlink during create-only publication', () => {
   const fixture = createFixture();
   const outside = path.join(fixture.root, 'outside.md');
   try {
@@ -351,7 +377,7 @@ test('the canonical project guard is honored by git status and check-ignore', ()
   }
 });
 
-test('rejects a vault path that traverses a symlink before creating directories', () => {
+testRequiringSymlinks('rejects a vault path that traverses a symlink before creating directories', () => {
   const fixture = createFixture();
   const outside = path.join(fixture.root, 'outside');
   fs.mkdirSync(outside);
@@ -370,7 +396,7 @@ test('rejects a vault path that traverses a symlink before creating directories'
   }
 });
 
-test('rejects a symlinked ancestor when roots come back from initializeVault', () => {
+testRequiringSymlinks('rejects a symlinked ancestor when roots come back from initializeVault', () => {
   const fixture = createFixture();
   const outside = path.join(fixture.root, 'outside');
   fs.mkdirSync(outside);
@@ -558,7 +584,7 @@ test('reads a regular file whose handle and path stats are compared', () => {
   }
 });
 
-test('opens regular text files without following a stable symlink', () => {
+testRequiringSymlinks('opens regular text files without following a stable symlink', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-memory-file-'));
   const target = path.join(root, 'target.md');
   const link = path.join(root, 'link.md');
