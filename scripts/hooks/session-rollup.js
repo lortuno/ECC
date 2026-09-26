@@ -13,14 +13,24 @@
  */
 
 const { sanitizeSessionId } = require('../lib/session-bridge');
-const { getClaudeDir } = require('../lib/utils');
+const { getClaudeDir, runCommand } = require('../lib/utils');
 const { getRunsFilePath: getSkillRunsFilePath } = require('../lib/skill-evolution/tracker');
 const { getRunsFilePath: getAgentRunsFilePath } = require('../lib/agent-tracker');
+const { getEstimatesFilePath } = require('../lib/task-estimate');
 const {
   getSessionsFilePath,
   computeSessionRow,
   upsertSessionRow,
 } = require('../lib/session-rollup');
+
+// Best-effort branch lookup, recorded on the row as `task` — the unit of
+// work the session belongs to. Resolved from the hook's own `cwd` (Windows
+// worktrees can differ from process.cwd() in edge cases) with a
+// process.cwd() fallback, matching session-end.js's branch lookup.
+function resolveBranch(cwd) {
+  const result = runCommand('git rev-parse --abbrev-ref HEAD', { cwd: cwd || process.cwd() });
+  return result.success && result.output ? result.output : null;
+}
 
 const MAX_STDIN = 1024 * 1024;
 
@@ -40,6 +50,8 @@ function run(rawInput) {
       costsPath: require('path').join(claudeDir, 'metrics', 'costs.jsonl'),
       agentRunsPath: getAgentRunsFilePath(),
       skillRunsPath: getSkillRunsFilePath(),
+      estimatesPath: getEstimatesFilePath(),
+      branch: resolveBranch(input.cwd),
     });
 
     if (row) {
@@ -71,4 +83,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { run };
+module.exports = { run, resolveBranch };

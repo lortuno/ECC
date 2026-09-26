@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "totalCommands": 94,
+  "totalCommands": 95,
   "commands": [
     {
       "command": "aside",
@@ -176,6 +176,15 @@
       "allAgents": [],
       "skills": [],
       "path": "commands/epic-validate.md"
+    },
+    {
+      "command": "estimate",
+      "description": "Record how long you expect the current requirements to take, before starting implementation, so the session report can compare estimate vs. actual.",
+      "type": "testing",
+      "primaryAgents": [],
+      "allAgents": [],
+      "skills": [],
+      "path": "commands/estimate.md"
     },
     {
       "command": "evolve",
@@ -1034,7 +1043,7 @@
       "planning": 2,
       "refactoring": 1,
       "review": 15,
-      "testing": 53
+      "testing": 54
     },
     "topAgents": [
       {

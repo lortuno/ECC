@@ -15,9 +15,11 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
-const { run } = require('../../scripts/hooks/session-rollup');
+const { run, resolveBranch } = require('../../scripts/hooks/session-rollup');
 const { readSessionRows } = require('../../scripts/lib/session-rollup');
+const { recordEstimate } = require('../../scripts/lib/task-estimate');
 
 let passed = 0;
 let failed = 0;
@@ -57,6 +59,23 @@ function writeJsonl(filePath, rows) {
   fs.writeFileSync(filePath, rows.map(r => JSON.stringify(r)).join('\n') + '\n', 'utf8');
 }
 
+// Creates a throwaway git repo with a given initial branch name, so branch
+// resolution can be asserted deterministically instead of depending on
+// whatever branch this test happens to run on. Needs one commit: on a fresh
+// repo `HEAD` is unborn and `git rev-parse --abbrev-ref HEAD` errors instead
+// of naming the branch, which never happens in a real session (there is
+// always at least one commit by the time a hook runs).
+function createGitRepo(branchName) {
+  const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'session-rollup-repo-'));
+  const run = (...args) => spawnSync('git', args, { encoding: 'utf8', cwd: repoDir });
+  const init = spawnSync('git', ['init', '--quiet', '-b', branchName, repoDir], { encoding: 'utf8' });
+  if (init.error || init.status !== 0) {
+    return { repoDir, gitAvailable: false };
+  }
+  const commit = run('-c', 'user.email=test@example.com', '-c', 'user.name=Test', 'commit', '--quiet', '--allow-empty', '-m', 'init');
+  return { repoDir, gitAvailable: !commit.error && commit.status === 0 };
+}
+
 test('run ignores malformed input without throwing', () => {
   assert.doesNotThrow(() => run('not json'));
   assert.doesNotThrow(() => run(''));
@@ -90,6 +109,73 @@ test('an end-to-end Stop hook run upserts one session row from the real sinks, i
     assert.strictEqual(rows[0].session_id, 'sess-1');
     assert.strictEqual(rows[0].input_tokens, 100);
     assert.strictEqual(rows[0].agents_used[0].name, 'code-reviewer');
+  });
+});
+
+test('resolveBranch reports the current branch of a real git repo', () => {
+  const { repoDir, gitAvailable } = createGitRepo('feature/session-reporting');
+  if (!gitAvailable) {
+    console.log('    (skipped: git CLI not available in this environment)');
+    return;
+  }
+  try {
+    assert.strictEqual(resolveBranch(repoDir), 'feature/session-reporting');
+  } finally {
+    fs.rmSync(repoDir, { recursive: true, force: true });
+  }
+});
+
+test('resolveBranch returns null for a directory that is not a git repo', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'session-rollup-not-a-repo-'));
+  try {
+    assert.strictEqual(resolveBranch(dir), null);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('an end-to-end Stop hook run records the task (branch) from the hook payload cwd', () => {
+  const { repoDir, gitAvailable } = createGitRepo('feature/session-reporting');
+  if (!gitAvailable) {
+    console.log('    (skipped: git CLI not available in this environment)');
+    return;
+  }
+  try {
+    withIsolatedHome(homeDir => {
+      const costsPath = path.join(homeDir, '.claude', 'metrics', 'costs.jsonl');
+      writeJsonl(costsPath, [
+        { session_id: 'sess-1', timestamp: '2026-01-01T00:00:00.000Z', model: 'x', input_tokens: 1, output_tokens: 1, cache_write_tokens: 0, cache_read_tokens: 0, estimated_cost_usd: 0 },
+      ]);
+
+      run(JSON.stringify({ session_id: 'sess-1', cwd: repoDir }));
+
+      const rows = readSessionRows({ homeDir });
+      assert.strictEqual(rows.length, 1);
+      assert.strictEqual(rows[0].task, 'feature/session-reporting');
+    });
+  } finally {
+    fs.rmSync(repoDir, { recursive: true, force: true });
+  }
+});
+
+test('an end-to-end Stop hook run joins a /estimate call recorded earlier in the session', () => {
+  withIsolatedHome(homeDir => {
+    const costsPath = path.join(homeDir, '.claude', 'metrics', 'costs.jsonl');
+    writeJsonl(costsPath, [
+      { session_id: 'sess-1', timestamp: '2026-01-01T00:00:00.000Z', model: 'x', input_tokens: 1, output_tokens: 1, cache_write_tokens: 0, cache_read_tokens: 0, estimated_cost_usd: 0 },
+      { session_id: 'sess-1', timestamp: '2026-01-01T00:20:00.000Z', model: 'x', input_tokens: 2, output_tokens: 2, cache_write_tokens: 0, cache_read_tokens: 0, estimated_cost_usd: 0 },
+    ]);
+    recordEstimate({ estimated_minutes: 30, note: 'add task/estimate tracking', session_id: 'sess-1' }, { homeDir });
+
+    run(JSON.stringify({ session_id: 'sess-1', cwd: homeDir }));
+
+    const rows = readSessionRows({ homeDir });
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].estimated_minutes, 30);
+    assert.strictEqual(rows[0].estimated_duration_ms, 30 * 60000);
+    assert.strictEqual(rows[0].estimate_note, 'add task/estimate tracking');
+    assert.strictEqual(rows[0].duration_ms, 1200000);
+    assert.strictEqual(rows[0].estimate_delta_ms, 1200000 - 30 * 60000);
   });
 });
 

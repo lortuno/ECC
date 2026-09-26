@@ -42,19 +42,31 @@ function namesList(entries) {
   return entries.map(e => `${e.name}(${e.count})`).join(',');
 }
 
+// Compares the /estimate call's guess against what actually happened, so a
+// session report doubles as a running calibration check. '-' when no
+// estimate was recorded for the session (estimating is opt-in).
+function formatEstimateComparison(row) {
+  if (!Number.isFinite(row.estimated_duration_ms)) return '-';
+  const estimated = formatDuration(row.estimated_duration_ms);
+  const actual = Number.isFinite(row.duration_ms) ? formatDuration(row.duration_ms) : '?';
+  return `${estimated} est -> ${actual}`;
+}
+
 function printTable(rows) {
   if (rows.length === 0) {
     console.log('No sessions recorded yet. The session-rollup Stop hook populates this after a session ends.');
     return;
   }
 
-  const header = ['started_at', 'session_id', 'model', 'tokens', 'duration', 'cost_usd', 'agents', 'skills'];
+  const header = ['started_at', 'session_id', 'task', 'model', 'tokens', 'duration', 'estimate', 'cost_usd', 'agents', 'skills'];
   const lines = rows.map(r => [
     r.started_at,
     String(r.session_id).slice(0, 12),
+    r.task || '-',
     r.model || 'unknown',
     String((r.input_tokens || 0) + (r.output_tokens || 0)),
     formatDuration(r.duration_ms),
+    formatEstimateComparison(r),
     `$${Number(r.estimated_cost_usd || 0).toFixed(4)}`,
     namesList(r.agents_used),
     namesList(r.skills_used),
@@ -75,9 +87,10 @@ function toCsvValue(value) {
 
 function printCsv(rows) {
   const columns = [
-    'session_id', 'started_at', 'ended_at', 'duration_ms', 'model',
+    'session_id', 'task', 'started_at', 'ended_at', 'duration_ms', 'model',
     'input_tokens', 'output_tokens', 'cache_write_tokens', 'cache_read_tokens',
-    'estimated_cost_usd', 'agents_used', 'skills_used',
+    'estimated_cost_usd', 'estimated_minutes', 'estimated_duration_ms', 'estimate_note',
+    'agents_used', 'skills_used',
   ];
   console.log(columns.join(','));
   for (const r of rows) {
@@ -98,6 +111,7 @@ function buildSql(rows) {
   const statements = [
     `CREATE TABLE IF NOT EXISTS sessions (
       session_id TEXT PRIMARY KEY,
+      task TEXT,
       started_at TEXT NOT NULL,
       ended_at TEXT,
       duration_ms INTEGER,
@@ -106,7 +120,11 @@ function buildSql(rows) {
       output_tokens INTEGER,
       cache_write_tokens INTEGER,
       cache_read_tokens INTEGER,
-      estimated_cost_usd REAL
+      estimated_cost_usd REAL,
+      estimated_minutes REAL,
+      estimated_duration_ms INTEGER,
+      estimate_note TEXT,
+      estimate_delta_ms INTEGER
     );`,
     `CREATE INDEX IF NOT EXISTS idx_sessions_started_at ON sessions(started_at);`,
     `CREATE TABLE IF NOT EXISTS agent_runs (
@@ -126,8 +144,8 @@ function buildSql(rows) {
 
   for (const r of rows) {
     statements.push(
-      `INSERT INTO sessions (session_id, started_at, ended_at, duration_ms, model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, estimated_cost_usd) VALUES (${
-        [r.session_id, r.started_at, r.ended_at, r.duration_ms, r.model, r.input_tokens, r.output_tokens, r.cache_write_tokens, r.cache_read_tokens, r.estimated_cost_usd]
+      `INSERT INTO sessions (session_id, task, started_at, ended_at, duration_ms, model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, estimated_cost_usd, estimated_minutes, estimated_duration_ms, estimate_note, estimate_delta_ms) VALUES (${
+        [r.session_id, r.task, r.started_at, r.ended_at, r.duration_ms, r.model, r.input_tokens, r.output_tokens, r.cache_write_tokens, r.cache_read_tokens, r.estimated_cost_usd, r.estimated_minutes, r.estimated_duration_ms, r.estimate_note, r.estimate_delta_ms]
           .map(sqlLiteral).join(', ')
       });`
     );
@@ -196,4 +214,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { formatDuration, namesList, printTable, toCsvValue, printCsv, buildSql, buildSqlite };
+module.exports = { formatDuration, namesList, formatEstimateComparison, printTable, toCsvValue, printCsv, buildSql, buildSqlite };

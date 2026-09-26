@@ -94,6 +94,64 @@ test('computeSessionRow joins agent runs by exact session_id', () => {
   });
 });
 
+test('computeSessionRow records the task (git branch) when provided', () => {
+  withTempDir(dir => {
+    const costsPath = path.join(dir, 'costs.jsonl');
+    writeJsonl(costsPath, [
+      { session_id: 'sess-1', timestamp: '2026-01-01T00:00:00.000Z', model: 'x', input_tokens: 1, output_tokens: 1, cache_write_tokens: 0, cache_read_tokens: 0, estimated_cost_usd: 0 },
+    ]);
+    const row = computeSessionRow('sess-1', { costsPath, branch: 'feature/session-reporting' });
+    assert.strictEqual(row.task, 'feature/session-reporting');
+  });
+});
+
+test('computeSessionRow leaves task null when no branch was resolved', () => {
+  withTempDir(dir => {
+    const costsPath = path.join(dir, 'costs.jsonl');
+    writeJsonl(costsPath, [
+      { session_id: 'sess-1', timestamp: '2026-01-01T00:00:00.000Z', model: 'x', input_tokens: 1, output_tokens: 1, cache_write_tokens: 0, cache_read_tokens: 0, estimated_cost_usd: 0 },
+    ]);
+    const row = computeSessionRow('sess-1', { costsPath });
+    assert.strictEqual(row.task, null);
+  });
+});
+
+test('computeSessionRow joins the latest estimate for the session and compares it against the actual duration', () => {
+  withTempDir(dir => {
+    const costsPath = path.join(dir, 'costs.jsonl');
+    const estimatesPath = path.join(dir, 'estimates.jsonl');
+    writeJsonl(costsPath, [
+      { session_id: 'sess-1', timestamp: '2026-01-01T00:00:00.000Z', model: 'x', input_tokens: 1, output_tokens: 1, cache_write_tokens: 0, cache_read_tokens: 0, estimated_cost_usd: 0 },
+      { session_id: 'sess-1', timestamp: '2026-01-01T00:30:00.000Z', model: 'x', input_tokens: 2, output_tokens: 2, cache_write_tokens: 0, cache_read_tokens: 0, estimated_cost_usd: 0 },
+    ]);
+    writeJsonl(estimatesPath, [
+      { estimated_minutes: 15, note: 'stale first guess', session_id: 'sess-1', recorded_at: '2026-01-01T00:00:00.000Z' },
+      { estimated_minutes: 20, note: 'revised after scoping', session_id: 'sess-1', recorded_at: '2026-01-01T00:05:00.000Z' },
+      { estimated_minutes: 999, note: 'different session', session_id: 'sess-2', recorded_at: '2026-01-01T00:06:00.000Z' },
+    ]);
+    const row = computeSessionRow('sess-1', { costsPath, estimatesPath });
+    assert.strictEqual(row.estimated_minutes, 20, 'the most recently recorded estimate wins');
+    assert.strictEqual(row.estimated_duration_ms, 20 * 60000);
+    assert.strictEqual(row.estimate_note, 'revised after scoping');
+    assert.strictEqual(row.duration_ms, 1800000);
+    assert.strictEqual(row.estimate_delta_ms, 1800000 - 20 * 60000);
+  });
+});
+
+test('computeSessionRow leaves estimate fields null when no estimate was recorded', () => {
+  withTempDir(dir => {
+    const costsPath = path.join(dir, 'costs.jsonl');
+    writeJsonl(costsPath, [
+      { session_id: 'sess-1', timestamp: '2026-01-01T00:00:00.000Z', model: 'x', input_tokens: 1, output_tokens: 1, cache_write_tokens: 0, cache_read_tokens: 0, estimated_cost_usd: 0 },
+    ]);
+    const row = computeSessionRow('sess-1', { costsPath });
+    assert.strictEqual(row.estimated_minutes, null);
+    assert.strictEqual(row.estimated_duration_ms, null);
+    assert.strictEqual(row.estimate_note, null);
+    assert.strictEqual(row.estimate_delta_ms, null);
+  });
+});
+
 test('computeSessionRow correlates skill runs by timestamp window (no session_id available)', () => {
   withTempDir(dir => {
     const costsPath = path.join(dir, 'costs.jsonl');

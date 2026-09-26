@@ -1,18 +1,24 @@
 'use strict';
 
 /**
- * Builds one aggregated row per session from the three independent JSONL
- * sinks (costs.jsonl, agent-runs.jsonl, skill-runs.jsonl) and upserts it
- * into a fourth sink (sessions.jsonl) — the "database" a session report is
- * read from.
+ * Builds one aggregated row per session from the independent JSONL sinks
+ * (costs.jsonl, agent-runs.jsonl, skill-runs.jsonl, task-estimates.jsonl)
+ * and upserts it into another sink (sessions.jsonl) — the "database" a
+ * session report is read from.
  *
- * Join caveat: agent-runs.jsonl carries session_id (exact join). Skill runs
- * do not — skill-run-tracker.js's persisted record intentionally has no
- * session_id (see its own test asserting exactly four fields). Skills are
- * therefore correlated to a session by timestamp window (any skill run
- * recorded between the session's first and last cost-tracker timestamp),
- * which is a best-effort approximation, not an exact join. This is called
- * out in the row itself via `skills_attribution: 'time-window'`.
+ * Join caveat: agent-runs.jsonl and task-estimates.jsonl carry session_id
+ * (exact join). Skill runs do not — skill-run-tracker.js's persisted record
+ * intentionally has no session_id (see its own test asserting exactly four
+ * fields). Skills are therefore correlated to a session by timestamp window
+ * (any skill run recorded between the session's first and last
+ * cost-tracker timestamp), which is a best-effort approximation, not an
+ * exact join. This is called out in the row itself via
+ * `skills_attribution: 'time-window'`.
+ *
+ * `task` (the git branch) and the estimate fields are both optional and
+ * best-effort: `task` is null when the hook could not resolve a branch
+ * (e.g. not a git repo), and the `estimated_*` fields are absent whenever
+ * no `/estimate` call was recorded for the session.
  */
 
 const fs = require('fs');
@@ -68,8 +74,23 @@ function countBy(values) {
 }
 
 /**
+ * Pick the most recently recorded estimate for a session. Re-estimating
+ * (calling `/estimate` more than once in the same session) is allowed; the
+ * latest call wins, matching how the cumulative cost row already works.
+ *
+ * @param {Array<object>} estimateRows
+ * @returns {object|null}
+ */
+function latestEstimate(estimateRows) {
+  if (estimateRows.length === 0) return null;
+  return estimateRows.reduce((latest, row) => (
+    Date.parse(row.recorded_at) > Date.parse(latest.recorded_at) ? row : latest
+  ));
+}
+
+/**
  * @param {string} sessionId
- * @param {{costsPath?: string, agentRunsPath?: string, skillRunsPath?: string}} paths
+ * @param {{costsPath?: string, agentRunsPath?: string, skillRunsPath?: string, estimatesPath?: string, branch?: string|null}} paths
  * @returns {object|null} the aggregated row, or null if this session has no cost rows yet
  */
 function computeSessionRow(sessionId, paths = {}) {
@@ -83,6 +104,7 @@ function computeSessionRow(sessionId, paths = {}) {
   const last = costRows[costRows.length - 1];
   const startMs = Date.parse(first.timestamp);
   const endMs = Date.parse(last.timestamp);
+  const durationMs = Number.isFinite(startMs) && Number.isFinite(endMs) ? Math.max(0, endMs - startMs) : null;
 
   const agentRows = readJsonl(paths.agentRunsPath).filter(row => row.session_id === sessionId);
   const agentsUsed = countBy(agentRows.map(row => row.agent_name));
@@ -92,17 +114,28 @@ function computeSessionRow(sessionId, paths = {}) {
     : [];
   const skillsUsed = countBy(skillRows.map(row => row.skill_id));
 
+  const estimateRows = readJsonl(paths.estimatesPath).filter(row => row.session_id === sessionId);
+  const estimate = latestEstimate(estimateRows);
+  const estimatedDurationMs = estimate ? estimate.estimated_minutes * 60000 : null;
+
   return {
     session_id: sessionId,
+    task: paths.branch || null,
     started_at: first.timestamp,
     ended_at: last.timestamp,
-    duration_ms: Number.isFinite(startMs) && Number.isFinite(endMs) ? Math.max(0, endMs - startMs) : null,
+    duration_ms: durationMs,
     model: last.model,
     input_tokens: last.input_tokens,
     output_tokens: last.output_tokens,
     cache_write_tokens: last.cache_write_tokens,
     cache_read_tokens: last.cache_read_tokens,
     estimated_cost_usd: last.estimated_cost_usd,
+    estimated_minutes: estimate ? estimate.estimated_minutes : null,
+    estimated_duration_ms: estimatedDurationMs,
+    estimate_note: estimate ? estimate.note : null,
+    estimate_delta_ms: Number.isFinite(durationMs) && Number.isFinite(estimatedDurationMs)
+      ? durationMs - estimatedDurationMs
+      : null,
     agents_used: agentsUsed,
     skills_used: skillsUsed,
     skills_attribution: 'time-window',

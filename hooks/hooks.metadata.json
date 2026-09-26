@@ -128,6 +128,11 @@
         "fingerprint": "5c5fe7253e20"
       },
       {
+        "id": "stop:session-rollup",
+        "description": "Roll up cost, agent, skill, task (git branch), and estimate-vs-actual data into one row per session for reporting",
+        "fingerprint": "9f830c8ba0ae"
+      },
+      {
         "id": "stop:desktop-notify",
         "description": "Send desktop notification (macOS/WSL) with task summary when Claude responds",
         "fingerprint": "7a492e898bf6"
