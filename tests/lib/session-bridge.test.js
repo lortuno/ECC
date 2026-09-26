@@ -6,8 +6,38 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
-const { sanitizeSessionId, getBridgePath, readBridge, writeBridgeAtomic, resolveSessionId, MAX_SESSION_ID_LENGTH } = require('../../scripts/lib/session-bridge');
+const {
+  sanitizeSessionId,
+  getBridgePath,
+  readBridge,
+  writeBridgeAtomic,
+  resolveSessionId,
+  resolveSessionIdFromLatestTranscript,
+  MAX_SESSION_ID_LENGTH,
+} = require('../../scripts/lib/session-bridge');
+
+// Mirrors the private slugifyProjectPath() in session-bridge.js, so tests can
+// build a fixture transcript directory at the exact path the function under
+// test will look for, without exporting an internal helper just for this.
+function slugForTest(cwd) {
+  return cwd.replace(/[\\/:]/g, '-');
+}
+
+function makeFakeProjectDir(homeDir, cwd) {
+  const projectDir = path.join(homeDir, '.claude', 'projects', slugForTest(cwd));
+  fs.mkdirSync(projectDir, { recursive: true });
+  return projectDir;
+}
+
+function writeTranscript(projectDir, sessionId, mtime) {
+  const file = path.join(projectDir, `${sessionId}.jsonl`);
+  fs.writeFileSync(file, '{}\n');
+  fs.utimesSync(file, mtime, mtime);
+  return file;
+}
 
 // Test helper
 function test(name, fn) {
@@ -284,6 +314,116 @@ function runTests() {
   if (
     test('MAX_SESSION_ID_LENGTH is 64', () => {
       assert.strictEqual(MAX_SESSION_ID_LENGTH, 64);
+    })
+  )
+    passed++;
+  else failed++;
+
+  // resolveSessionIdFromLatestTranscript tests
+  //
+  // Regression coverage for the /estimate bug (session_id: null never joins
+  // the Stop hook's session-rollup row): a plain Bash-tool subprocess never
+  // receives ECC_SESSION_ID/CLAUDE_SESSION_ID, so resolveSessionId() must
+  // fall back to inferring the current session from the most recently
+  // modified transcript under ~/.claude/projects/<slug>/*.jsonl.
+  console.log('\nresolveSessionIdFromLatestTranscript:');
+
+  if (
+    test('returns null when the project has no transcript directory', () => {
+      const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'session-bridge-test-'));
+      try {
+        const result = resolveSessionIdFromLatestTranscript(path.join(tmpHome, 'no-such-project'), { homeDir: tmpHome });
+        assert.strictEqual(result, null);
+      } finally {
+        fs.rmSync(tmpHome, { recursive: true, force: true });
+      }
+    })
+  )
+    passed++;
+  else failed++;
+
+  if (
+    test('picks the most recently modified top-level transcript', () => {
+      const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'session-bridge-test-'));
+      try {
+        const cwd = path.join(tmpHome, 'project');
+        const projectDir = makeFakeProjectDir(tmpHome, cwd);
+        const now = Date.now();
+        writeTranscript(projectDir, 'older-session-id', new Date(now - 60000));
+        writeTranscript(projectDir, 'newer-session-id', new Date(now));
+
+        const result = resolveSessionIdFromLatestTranscript(cwd, { homeDir: tmpHome });
+        assert.strictEqual(result, 'newer-session-id');
+      } finally {
+        fs.rmSync(tmpHome, { recursive: true, force: true });
+      }
+    })
+  )
+    passed++;
+  else failed++;
+
+  if (
+    test('ignores a subdirectory named after a session id (subagent transcripts live there, not at top level)', () => {
+      const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'session-bridge-test-'));
+      try {
+        const cwd = path.join(tmpHome, 'project');
+        const projectDir = makeFakeProjectDir(tmpHome, cwd);
+        const now = new Date();
+        writeTranscript(projectDir, 'real-session-id', now);
+        // A directory that shares a transcript's naming shape must never be
+        // mistaken for a session file.
+        fs.mkdirSync(path.join(projectDir, 'nested-session-id.jsonl'));
+
+        const result = resolveSessionIdFromLatestTranscript(cwd, { homeDir: tmpHome });
+        assert.strictEqual(result, 'real-session-id');
+      } finally {
+        fs.rmSync(tmpHome, { recursive: true, force: true });
+      }
+    })
+  )
+    passed++;
+  else failed++;
+
+  if (
+    test('resolveSessionId falls back to the transcript heuristic when no env var is set', () => {
+      const originalEcc = process.env.ECC_SESSION_ID;
+      const originalClaude = process.env.CLAUDE_SESSION_ID;
+      const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'session-bridge-test-'));
+      try {
+        delete process.env.ECC_SESSION_ID;
+        delete process.env.CLAUDE_SESSION_ID;
+        const cwd = path.join(tmpHome, 'project');
+        const projectDir = makeFakeProjectDir(tmpHome, cwd);
+        writeTranscript(projectDir, 'fallback-session-id', new Date());
+
+        const result = resolveSessionId({ cwd, homeDir: tmpHome });
+        assert.strictEqual(result, 'fallback-session-id');
+      } finally {
+        fs.rmSync(tmpHome, { recursive: true, force: true });
+        if (originalEcc === undefined) delete process.env.ECC_SESSION_ID; else process.env.ECC_SESSION_ID = originalEcc;
+        if (originalClaude === undefined) delete process.env.CLAUDE_SESSION_ID; else process.env.CLAUDE_SESSION_ID = originalClaude;
+      }
+    })
+  )
+    passed++;
+  else failed++;
+
+  if (
+    test('resolveSessionId still prefers the env var over the transcript fallback', () => {
+      const originalEcc = process.env.ECC_SESSION_ID;
+      const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'session-bridge-test-'));
+      try {
+        const cwd = path.join(tmpHome, 'project');
+        const projectDir = makeFakeProjectDir(tmpHome, cwd);
+        writeTranscript(projectDir, 'transcript-session-id', new Date());
+        process.env.ECC_SESSION_ID = 'env-wins-session-id';
+
+        const result = resolveSessionId({ cwd, homeDir: tmpHome });
+        assert.strictEqual(result, 'env-wins-session-id');
+      } finally {
+        fs.rmSync(tmpHome, { recursive: true, force: true });
+        if (originalEcc === undefined) delete process.env.ECC_SESSION_ID; else process.env.ECC_SESSION_ID = originalEcc;
+      }
     })
   )
     passed++;

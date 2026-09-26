@@ -128,13 +128,79 @@ function renameWithRetry(tmp, target) {
   }
 }
 
+function getHomeDirForTranscripts() {
+  const explicitHome = process.env.HOME || process.env.USERPROFILE;
+  return explicitHome && explicitHome.trim() ? explicitHome : os.homedir();
+}
+
 /**
- * Resolve session ID from environment variables.
+ * Encode a project directory the same way Claude Code names a project's
+ * transcript folder under ~/.claude/projects/ (path separators and drive
+ * colons become "-"). Empirically verified against this repo's own
+ * transcript directory (e.g. "D:\...\ECC" -> "D--...-ECC"); not documented
+ * upstream, so treat a lookup miss as "no fallback available" rather than
+ * an error.
+ */
+function slugifyProjectPath(absoluteCwd) {
+  return absoluteCwd.replace(/[\\/:]/g, '-');
+}
+
+/**
+ * Best-effort fallback for resolveSessionId() when ECC_SESSION_ID and
+ * CLAUDE_SESSION_ID are both unset -- true for a plain Bash-tool subprocess
+ * (e.g. the /estimate slash command), which never receives the harness's
+ * Stop-hook JSON payload the way scripts/hooks/*.js hooks do. Infers the
+ * current session from the most recently modified top-level transcript
+ * (~/.claude/projects/<slug>/<session_id>.jsonl) for this project.
+ *
+ * Not authoritative: if another Claude Code session or a subagent run in
+ * the same project touched its own transcript more recently, this can pick
+ * the wrong id. Callers that need an exact session id (hooks, which already
+ * receive it directly) must not use this path.
+ *
+ * @param {string} [cwd] - Project directory whose transcripts to search.
+ * @param {{homeDir?: string}} [options]
  * @returns {string|null} Sanitized session ID or null
  */
-function resolveSessionId() {
+function resolveSessionIdFromLatestTranscript(cwd = process.cwd(), options = {}) {
+  try {
+    const home = path.resolve(options.homeDir || getHomeDirForTranscripts());
+    const projectDir = path.join(home, '.claude', 'projects', slugifyProjectPath(path.resolve(cwd)));
+    const entries = fs.readdirSync(projectDir, { withFileTypes: true });
+
+    let latest = null;
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith('.jsonl')) continue;
+      const sanitized = sanitizeSessionId(entry.name.slice(0, -'.jsonl'.length));
+      if (!sanitized) continue;
+
+      let stats;
+      try {
+        stats = fs.statSync(path.join(projectDir, entry.name));
+      } catch {
+        continue;
+      }
+      if (!latest || stats.mtimeMs > latest.mtimeMs) {
+        latest = { sessionId: sanitized, mtimeMs: stats.mtimeMs };
+      }
+    }
+    return latest ? latest.sessionId : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve session ID from environment variables, falling back to
+ * resolveSessionIdFromLatestTranscript() when neither is set.
+ * @param {{cwd?: string, homeDir?: string}} [options]
+ * @returns {string|null} Sanitized session ID or null
+ */
+function resolveSessionId(options = {}) {
   const raw = process.env.ECC_SESSION_ID || process.env.CLAUDE_SESSION_ID || '';
-  return sanitizeSessionId(raw);
+  const fromEnv = sanitizeSessionId(raw);
+  if (fromEnv) return fromEnv;
+  return resolveSessionIdFromLatestTranscript(options.cwd, options);
 }
 
 module.exports = {
@@ -144,5 +210,6 @@ module.exports = {
   writeBridgeAtomic,
   renameWithRetry,
   resolveSessionId,
+  resolveSessionIdFromLatestTranscript,
   MAX_SESSION_ID_LENGTH
 };
